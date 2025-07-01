@@ -1,11 +1,11 @@
 package services
 
 import (
-	"crypto/sha1"
 	"fmt"
 	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/models"
 	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
@@ -16,7 +16,9 @@ const (
 )
 
 type tokenClaims struct {
-	userId int
+	userId   int
+	username string
+	isAdmin  bool
 	jwt.RegisteredClaims
 }
 
@@ -28,61 +30,61 @@ func NewAuthService(repo repository.Repository) *AuthService {
 	return &AuthService{repo: repo}
 }
 
-func generatePasswordHash(password string) string {
-	passwordHash := sha1.New()
-	passwordHash.Write([]byte(password))
-	passwordHash.Write([]byte(salt))
-	return fmt.Sprintf("%x", passwordHash.Sum(nil))
+func generatePasswordHash(password string) (string, error) {
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(passwordHash), nil
 }
 
 func (s *AuthService) Create(user models.User) (int, error) {
-	user.Password = generatePasswordHash(user.Password)
+	var err error
+	user.Password, err = generatePasswordHash(user.Password)
+	if err != nil {
+		return 0, err
+	}
 	return s.repo.Create(user)
 }
 
 func (s *AuthService) GenerateToken(username, password string) (string, error) {
-	user, err := s.repo.GetUser(username, password)
-
+	passwordHash, err := generatePasswordHash(password)
+	user, err := s.repo.GetUser(username, passwordHash)
 	if err != nil {
 		return "", err
 	}
 
-	claims := tokenClaims{
-		user.Id,
-		jwt.RegisteredClaims{
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
+		userId:   user.Id,
+		username: user.Username,
+		isAdmin:  user.IsAdmin,
+		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "Pharma-Auth-Service",
 		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	})
 
-	tokenString, err := token.SignedString([]byte(signingKey))
-
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
+	return token.SignedString([]byte(signingKey))
 }
 
-func (s *AuthService) VerifyToken(tokenString string) (int, error) {
+func (s *AuthService) ValidateToken(tokenString string) (models.User, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-
 		return []byte(signingKey), nil
 	})
-
 	if err != nil {
-		return 0, err
+		return models.User{}, err
 	}
 
-	claims, ok := token.Claims.(tokenClaims)
-	if !ok || !token.Valid {
-		return 0, err
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return models.User{
+			Id:       int(claims["userId"].(int)),
+			Username: claims["username"].(string),
+			IsAdmin:  claims["isAdmin"].(bool),
+		}, nil
 	}
 
-	return claims.userId, nil
+	return models.User{}, err
 }
