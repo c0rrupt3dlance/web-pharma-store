@@ -1,5 +1,12 @@
 package models
 
-type AccessToken struct {
-	Acce
+import "time"
+
+type RefreshToken struct {
+	Id        int       `json:"id"`
+	UserId    int       `json:"user_id"`
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
+	Revoked   bool      `json:"revoked"`
+	CreatedAt time.Time `json:"created_at"`
 }

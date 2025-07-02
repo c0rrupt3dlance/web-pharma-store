@@ -18,7 +18,7 @@ const (
 type tokenClaims struct {
 	userId   int
 	username string
-	isAdmin  bool
+	Role     string
 	jwt.RegisteredClaims
 }
 
@@ -57,7 +57,7 @@ func (s *AuthService) GenerateToken(username, password string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		userId:   user.Id,
 		username: user.Username,
-		isAdmin:  user.IsAdmin,
+		Role:     user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -82,7 +82,7 @@ func (s *AuthService) ValidateToken(tokenString string) (models.User, error) {
 		return models.User{
 			Id:       int(claims["userId"].(int)),
 			Username: claims["username"].(string),
-			IsAdmin:  claims["isAdmin"].(bool),
+			Role:     claims["role"].(string),
 		}, nil
 	}
 

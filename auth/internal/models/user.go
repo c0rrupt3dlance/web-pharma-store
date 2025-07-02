@@ -7,5 +7,5 @@ type User struct {
 	Username string `json:"username" binding:"required"`
 	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
-	IsAdmin  bool   `json:"is_admin"`
+	Role     string `json:"role" binding:"omitempty,oneof=user admin"`
 }
