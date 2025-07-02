@@ -22,3 +22,24 @@ func (h *Handler) SignUp(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{"user_id": userId})
 }
+
+type SignInInput struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+func (h *Handler) SignIn(c *gin.Context) {
+	var input SignInInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad input"})
+		return
+	}
+
+	token, err := h.services.GenerateToken(input.Username, input.Password)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid credentials"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": token})
+}

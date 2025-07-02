@@ -7,10 +7,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const (
-	usersTable = "users"
-)
-
 type AuthPostgres struct {
 	pool *pgxpool.Pool
 }

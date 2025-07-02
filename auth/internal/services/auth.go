@@ -12,13 +12,13 @@ import (
 const (
 	salt       = "M!m39233j4!"
 	signingKey = "(!#Mn45ntg24gN!0"
-	TokenTTL   = time.Hour * 8
+	TokenTTL   = time.Minute * 60
 )
 
 type tokenClaims struct {
 	userId   int
 	username string
-	Role     string
+	role     string
 	jwt.RegisteredClaims
 }
 
@@ -47,8 +47,11 @@ func (s *AuthService) Create(user models.User) (int, error) {
 	return s.repo.Create(user)
 }
 
-func (s *AuthService) GenerateToken(username, password string) (string, error) {
+func (s *AuthService) GenerateAccessToken(username, password string) (string, error) {
 	passwordHash, err := generatePasswordHash(password)
+	if err != nil {
+		return "", err
+	}
 	user, err := s.repo.GetUser(username, passwordHash)
 	if err != nil {
 		return "", err
@@ -57,7 +60,7 @@ func (s *AuthService) GenerateToken(username, password string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		userId:   user.Id,
 		username: user.Username,
-		Role:     user.Role,
+		role:     user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -67,23 +70,25 @@ func (s *AuthService) GenerateToken(username, password string) (string, error) {
 	return token.SignedString([]byte(signingKey))
 }
 
-func (s *AuthService) ValidateToken(tokenString string) (models.User, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+func (s *AuthService) VerifyAccessToken(tokenString string) (models.User, error) {
+	user := models.User{}
+	token, err := jwt.ParseWithClaims(tokenString, &tokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+		_, ok := token.Method.(*jwt.SigningMethodHMAC)
+		if !ok {
+			return nil, fmt.Errorf("unexpected signing method")
 		}
 		return []byte(signingKey), nil
 	})
+
 	if err != nil {
 		return models.User{}, err
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return models.User{
-			Id:       int(claims["userId"].(int)),
-			Username: claims["username"].(string),
-			Role:     claims["role"].(string),
-		}, nil
+	if claims, ok := token.Claims.(*tokenClaims); ok && token.Valid {
+		user.Id = claims.userId
+		user.Username = claims.username
+		user.Role = claims.role
+		return user, nil
 	}
 
 	return models.User{}, err

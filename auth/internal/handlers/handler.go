@@ -26,4 +26,6 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	{
 		auth.POST("/sign-up")
 	}
+
+	return router
 }

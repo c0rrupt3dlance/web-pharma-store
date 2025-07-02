@@ -7,8 +7,8 @@ import (
 
 type Authorization interface {
 	Create(user models.User) (int, error)
-	GenerateToken(username, password string) (string, error)
-	VerifyToken(tokenString string) (int, error)
+	GenerateAccessToken(username, password string) (string, error)
+	VerifyAccessToken(tokenString string) (models.User, error)
 }
 
 type Service struct {
@@ -17,6 +17,6 @@ type Service struct {
 
 func NewService(repo repository.Repository) *Service {
 	return &Service{
-		New
+		NewAuthService(repo),
 	}
 }
