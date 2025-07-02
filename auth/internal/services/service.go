@@ -7,7 +7,8 @@ import (
 
 type Authorization interface {
 	Create(user models.User) (int, error)
-	GenerateAccessToken(username, password string) (string, error)
+	GenerateTokens(username, password string) (string, string, error)
+	RefreshTokens(refreshToken string) (string, string, error)
 	VerifyAccessToken(tokenString string) (models.User, error)
 }
 
@@ -15,7 +16,7 @@ type Service struct {
 	Authorization
 }
 
-func NewService(repo repository.Repository) *Service {
+func NewService(repo *repository.Repository) *Service {
 	return &Service{
 		NewAuthService(repo),
 	}

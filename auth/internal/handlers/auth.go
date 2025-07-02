@@ -35,11 +35,12 @@ func (h *Handler) SignIn(c *gin.Context) {
 		return
 	}
 
-	token, err := h.services.GenerateToken(input.Username, input.Password)
+	accessToken, refreshToken, err := h.services.GenerateTokens(input.Username, input.Password)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid credentials"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusOK, gin.H{"access_token": accessToken,
+		"refresh_token": refreshToken})
 }

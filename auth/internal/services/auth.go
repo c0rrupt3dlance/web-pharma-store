@@ -1,16 +1,17 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/models"
 	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
+	uuid "github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
 const (
-	salt       = "M!m39233j4!"
 	signingKey = "(!#Mn45ntg24gN!0"
 	TokenTTL   = time.Minute * 60
 )
@@ -23,10 +24,10 @@ type tokenClaims struct {
 }
 
 type AuthService struct {
-	repo repository.Repository
+	repo repository.Authorization
 }
 
-func NewAuthService(repo repository.Repository) *AuthService {
+func NewAuthService(repo repository.Authorization) *AuthService {
 	return &AuthService{repo: repo}
 }
 
@@ -47,27 +48,28 @@ func (s *AuthService) Create(user models.User) (int, error) {
 	return s.repo.Create(user)
 }
 
-func (s *AuthService) GenerateAccessToken(username, password string) (string, error) {
-	passwordHash, err := generatePasswordHash(password)
+func (s *AuthService) GenerateTokens(username, password string) (string, string, error) {
+	user, err := s.repo.GetUser(username)
 	if err != nil {
-		return "", err
+		return "", "", errors.New("internal error")
 	}
-	user, err := s.repo.GetUser(username, passwordHash)
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return "", err
+		return "", "", errors.New("invalid credentials")
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
-		userId:   user.Id,
-		username: user.Username,
-		role:     user.Role,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenTTL)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	})
+	refreshToken, err := s.generateRefreshToken(user.Id)
+	if err != nil {
+		return "", "", err
+	}
 
-	return token.SignedString([]byte(signingKey))
+	accessToken, err := generateAccessToken(user)
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
+
 }
 
 func (s *AuthService) VerifyAccessToken(tokenString string) (models.User, error) {
@@ -81,6 +83,9 @@ func (s *AuthService) VerifyAccessToken(tokenString string) (models.User, error)
 	})
 
 	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return models.User{}, errors.New("access token expired")
+		}
 		return models.User{}, err
 	}
 
@@ -92,4 +97,57 @@ func (s *AuthService) VerifyAccessToken(tokenString string) (models.User, error)
 	}
 
 	return models.User{}, err
+}
+
+func (s *AuthService) RefreshTokens(refreshToken string) (string, string, error) {
+	tokenRecord, err := s.repo.GetRefreshToken(refreshToken)
+	if err != nil || tokenRecord.Revoked || tokenRecord.ExpiresAt.Before(time.Now()) {
+		return "", "", errors.New("invalid or expired refresh token")
+	}
+
+	user, err := s.repo.GetUserById(tokenRecord.UserId)
+	if err != nil {
+		return "", "", errors.New("internal error")
+	}
+
+	newRefresh, err := s.generateRefreshToken(user.Id)
+	if err != nil {
+		return "", "", err
+	}
+
+	newAccess, err := generateAccessToken(user)
+	if err != nil {
+		return "", "", err
+	}
+
+	return newAccess, newRefresh, nil
+}
+
+func generateAccessToken(user models.User) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
+		userId:   user.Id,
+		username: user.Username,
+		role:     user.Role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenTTL)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	})
+	return token.SignedString([]byte(signingKey))
+}
+
+func (s *AuthService) generateRefreshToken(userId int) (string, error) {
+	token := uuid.New().String()
+	expiresAt := time.Now().Add(time.Hour * 7 * 24)
+
+	err := s.repo.SaveRefreshToken(models.RefreshToken{
+		UserId:    userId,
+		Token:     token,
+		ExpiresAt: expiresAt,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }

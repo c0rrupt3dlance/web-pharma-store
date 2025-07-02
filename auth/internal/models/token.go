@@ -8,5 +8,5 @@ type RefreshToken struct {
 	Token     string    `json:"token"`
 	ExpiresAt time.Time `json:"expires_at"`
 	Revoked   bool      `json:"revoked"`
-	CreatedAt time.Time `json:"created_at"`
+	IssuedAt  time.Time `json:"Issued_at"`
 }
