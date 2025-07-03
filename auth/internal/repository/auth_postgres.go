@@ -55,7 +55,7 @@ func (r *AuthPostgres) SaveRefreshToken(token models.RefreshToken) error {
 func (r *AuthPostgres) GetRefreshToken(token string) (models.RefreshToken, error) {
 	refreshToken := models.RefreshToken{}
 	query := fmt.Sprintf(`select user_id, expires_at, revoked, issued_at 
-		from %s where token_string=$1`, refreshTokensTable)
+		from %s where token=$1`, refreshTokensTable)
 
 	err := r.pool.QueryRow(context.Background(), query, token).Scan(&refreshToken.UserId,
 		&refreshToken.ExpiresAt, &refreshToken.Revoked, &refreshToken.IssuedAt)
@@ -82,7 +82,7 @@ func (r *AuthPostgres) GetUserById(userId int) (models.User, error) {
 }
 
 func (r *AuthPostgres) RevokeRefreshToken(tokenString string) error {
-	query := fmt.Sprintf(`insert into %s set revoked=true where token=$2`, refreshTokensTable)
+	query := fmt.Sprintf(`update %s set revoked=true where token=$1`, refreshTokensTable)
 
 	_, err := r.pool.Exec(context.Background(), query, tokenString)
 	if err != nil {

@@ -47,6 +47,25 @@ func (h *Handler) SignIn(c *gin.Context) {
 	})
 }
 
-func (h *Handler) RefreshToken(c *gin.Context) {
+type RefreshInput struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
 
+func (h *Handler) RefreshToken(c *gin.Context) {
+	var input RefreshInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Token"})
+		return
+	}
+
+	accessToken, newRefreshToken, err := h.services.RefreshTokens(input.RefreshToken)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid refresh token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"access_token":  accessToken,
+		"refresh_token": newRefreshToken,
+	})
 }

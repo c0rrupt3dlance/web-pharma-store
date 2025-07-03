@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -27,6 +28,7 @@ type PgConfig struct {
 func NewPgPool(cfg PgConfig) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.New(context.Background(), fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database))
 	if err != nil {
+		logrus.Printf("fail due to %s", err)
 		return nil, errors.New("unable to connect to postgres db")
 	}
 

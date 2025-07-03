@@ -11,6 +11,7 @@ type Authorization interface {
 	SaveRefreshToken(token models.RefreshToken) error
 	GetRefreshToken(token string) (models.RefreshToken, error)
 	GetUserById(userId int) (models.User, error)
+	RevokeRefreshToken(tokenString string) error
 }
 
 type Repository struct {

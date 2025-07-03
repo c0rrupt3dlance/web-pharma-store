@@ -7,6 +7,7 @@ import (
 	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
 	uuid "github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 )
@@ -105,24 +106,33 @@ func (s *AuthService) VerifyAccessToken(tokenString string) (models.User, error)
 func (s *AuthService) RefreshTokens(refreshToken string) (string, string, error) {
 	tokenRecord, err := s.repo.GetRefreshToken(refreshToken)
 	if err != nil || tokenRecord.Revoked || tokenRecord.ExpiresAt.Before(time.Now()) {
-		return "", "", errors.New("invalid or expired refresh token")
+		logrus.Println(err)
+		return "", "", err
+	}
+
+	err = s.repo.RevokeRefreshToken(refreshToken)
+	if err != nil {
+		logrus.Println(err, "RevokeRefreshToken")
+		return "", "", errors.New("can't revoke token")
 	}
 
 	user, err := s.repo.GetUserById(tokenRecord.UserId)
 	if err != nil {
+		logrus.Println(err, "GetUserById")
 		return "", "", errors.New("internal error")
 	}
 
 	newRefresh, err := s.generateRefreshToken(user.Id)
 	if err != nil {
+		logrus.Println(err, "generateRefreshToken")
 		return "", "", err
 	}
 
 	newAccess, err := s.generateAccessToken(user)
 	if err != nil {
+		logrus.Println(err, "generateAccessToken")
 		return "", "", err
 	}
-
 	return newAccess, newRefresh, nil
 }
 
