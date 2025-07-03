@@ -31,7 +31,11 @@ func main() {
 		os.Exit(1)
 	}
 	repo := repository.NewRepository(pool)
-	service := services.NewService(repo)
+	deps := services.Dependencies{
+		Repo:       repo,
+		SigningKey: os.Getenv("SIGNING_KEY"),
+	}
+	service := services.NewService(deps.Repo, deps.SigningKey)
 	handler := handlers.NewHandler(service)
 
 	server := new(app.Server)

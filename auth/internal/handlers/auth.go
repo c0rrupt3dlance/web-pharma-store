@@ -41,6 +41,12 @@ func (h *Handler) SignIn(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"access_token": accessToken,
-		"refresh_token": refreshToken})
+	c.JSON(http.StatusOK, gin.H{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	})
+}
+
+func (h *Handler) RefreshToken(c *gin.Context) {
+
 }

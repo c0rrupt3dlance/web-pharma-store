@@ -16,8 +16,13 @@ type Service struct {
 	Authorization
 }
 
-func NewService(repo *repository.Repository) *Service {
+type Dependencies struct {
+	Repo       *repository.Repository
+	SigningKey string
+}
+
+func NewService(repo *repository.Repository, signingKey string) *Service {
 	return &Service{
-		NewAuthService(repo),
+		NewAuthService(repo, signingKey),
 	}
 }

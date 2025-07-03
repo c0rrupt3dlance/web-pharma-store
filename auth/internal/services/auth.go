@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	signingKey = "(!#Mn45ntg24gN!0"
-	TokenTTL   = time.Minute * 60
+	TokenTTL = time.Minute * 60
 )
 
 type tokenClaims struct {
@@ -24,11 +23,15 @@ type tokenClaims struct {
 }
 
 type AuthService struct {
-	repo repository.Authorization
+	repo       repository.Authorization
+	signingKey string
 }
 
-func NewAuthService(repo repository.Authorization) *AuthService {
-	return &AuthService{repo: repo}
+func NewAuthService(repo repository.Authorization, signingKey string) *AuthService {
+	return &AuthService{
+		repo:       repo,
+		signingKey: signingKey,
+	}
 }
 
 func generatePasswordHash(password string) (string, error) {
@@ -63,7 +66,7 @@ func (s *AuthService) GenerateTokens(username, password string) (string, string,
 		return "", "", err
 	}
 
-	accessToken, err := generateAccessToken(user)
+	accessToken, err := s.generateAccessToken(user)
 	if err != nil {
 		return "", "", err
 	}
@@ -79,7 +82,7 @@ func (s *AuthService) VerifyAccessToken(tokenString string) (models.User, error)
 		if !ok {
 			return nil, fmt.Errorf("unexpected signing method")
 		}
-		return []byte(signingKey), nil
+		return []byte(s.signingKey), nil
 	})
 
 	if err != nil {
@@ -115,7 +118,7 @@ func (s *AuthService) RefreshTokens(refreshToken string) (string, string, error)
 		return "", "", err
 	}
 
-	newAccess, err := generateAccessToken(user)
+	newAccess, err := s.generateAccessToken(user)
 	if err != nil {
 		return "", "", err
 	}
@@ -123,7 +126,7 @@ func (s *AuthService) RefreshTokens(refreshToken string) (string, string, error)
 	return newAccess, newRefresh, nil
 }
 
-func generateAccessToken(user models.User) (string, error) {
+func (s *AuthService) generateAccessToken(user models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		userId:   user.Id,
 		username: user.Username,
@@ -133,7 +136,7 @@ func generateAccessToken(user models.User) (string, error) {
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	})
-	return token.SignedString([]byte(signingKey))
+	return token.SignedString([]byte(s.signingKey))
 }
 
 func (s *AuthService) generateRefreshToken(userId int) (string, error) {
