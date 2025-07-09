@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/app"
-	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/handlers"
-	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/repository"
-	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/services"
+	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/app"
+	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/handlers"
+	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/repository"
+	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/services"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"log"

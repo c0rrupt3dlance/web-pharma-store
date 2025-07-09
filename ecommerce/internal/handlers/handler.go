@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/services"
+	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/services"
 	"github.com/gin-gonic/gin"
 )
 
