@@ -1,25 +1,23 @@
 package repository
 
 import (
-	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/models"
+	models "github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type Authorization interface {
-	Create(models.User) (int, error)
-	GetUser(username string) (models.User, error)
-	SaveRefreshToken(token models.RefreshToken) error
-	GetRefreshToken(token string) (models.RefreshToken, error)
-	GetUserById(userId int) (models.User, error)
-	RevokeRefreshToken(tokenString string) error
+type Products interface {
+	Create(product models.Product) (int, error)
+	GetById(ProductId int) (models.ProductResponse, error)
+	Update(product models.Product) error
+	Delete(ProductId int) error
 }
 
-type Repository struct {
-	Authorization
+type Commerce struct {
+	Products
 }
 
-func NewRepository(pool *pgxpool.Pool) *Repository {
-	return &Repository{
-		Authorization: NewAuthPostgres(pool),
+func NewCommerceRepository(pool *pgxpool.Pool) *Commerce {
+	return &Commerce{
+		Products: NewProductPostgres(pool),
 	}
 }

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/models"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )

@@ -24,3 +24,8 @@ type ProductImage struct {
 	AltText   string `json:"alt_text"`
 	IsMain    bool   `json:"is_main"`
 }
+
+type ProductResponse struct {
+	Product    Product
+	Categories []Categories
+}
