@@ -22,11 +22,15 @@ func (h *Handler) InitRoutes() *gin.Engine {
 			"ping": "pong",
 		})
 	})
-	auth := router.Group("/auth")
+	api := router.Group("/api/v1", h.ParseAccessToken)
 	{
-		auth.POST("/sign-up", h.SignUp)
-		auth.POST("/sign-in", h.SignIn)
-		auth.POST("/refresh", h.RefreshToken)
+		products := api.Group("/products")
+		{
+			products.GET("/:id")
+			products.POST("/")
+			products.PUT("/:id")
+			products.DELETE("/:id")
+		}
 	}
 
 	return router

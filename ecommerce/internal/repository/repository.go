@@ -12,12 +12,12 @@ type Products interface {
 	Delete(ProductId int) error
 }
 
-type Commerce struct {
+type Repository struct {
 	Products
 }
 
-func NewCommerceRepository(pool *pgxpool.Pool) *Commerce {
-	return &Commerce{
+func NewRepository(pool *pgxpool.Pool) *Commerce {
+	return &Repository{
 		Products: NewProductPostgres(pool),
 	}
 }
