@@ -26,7 +26,13 @@ func (r *ProductPostgres) Create(product models.Product) (int, error) {
 	return product.Id, nil
 }
 func (r *ProductPostgres) GetById(ProductId int) (models.ProductResponse, error) {
-	return models.ProductResponse{}, nil
+	var product models.ProductResponse
+	query := fmt.Sprintf(`select * from products where id=$1`)
+	row := r.pool.QueryRow(context.Background(), query, ProductId)
+	if err := row.Scan(&product.Id, &product.Name, &product.Description, &product.Price); err != nil {
+		return models.ProductResponse{}, err
+	}
+	return product, nil
 }
 func (r *ProductPostgres) Update(product models.Product) error {
 	return nil
