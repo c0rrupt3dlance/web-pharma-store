@@ -16,7 +16,7 @@ type Repository struct {
 	Products
 }
 
-func NewRepository(pool *pgxpool.Pool) *Commerce {
+func NewRepository(pool *pgxpool.Pool) *Repository {
 	return &Repository{
 		Products: NewProductPostgres(pool),
 	}

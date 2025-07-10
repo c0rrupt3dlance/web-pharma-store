@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"context"
+	"fmt"
 	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -16,7 +18,12 @@ func NewProductPostgres(pool *pgxpool.Pool) *ProductPostgres {
 }
 
 func (r *ProductPostgres) Create(product models.Product) (int, error) {
-	return 0, nil
+	query := fmt.Sprintf("INSERT INTO products (name, description, price) values ($1, $2, $3) returning id")
+	row := r.pool.QueryRow(context.Background(), query, product.Name, product.Description, product.Price)
+	if err := row.Scan(&product.Id); err != nil {
+		return 0, err
+	}
+	return product.Id, nil
 }
 func (r *ProductPostgres) GetById(ProductId int) (models.ProductResponse, error) {
 	return models.ProductResponse{}, nil

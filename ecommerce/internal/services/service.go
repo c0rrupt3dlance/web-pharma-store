@@ -12,12 +12,18 @@ type Products interface {
 	Delete(ProductId int) error
 }
 
-type Service struct {
-	Products
+type Authorization interface {
+	VerifyAccessToken(accessToken string) (int, error)
 }
 
-func NewService(repo *repository.Repository) *Service {
+type Service struct {
+	Products
+	Authorization
+}
+
+func NewService(repo *repository.Repository, signingKey string) *Service {
 	return &Service{
-		Products: NewService(repo),
+		Products:      NewProductsService(repo),
+		Authorization: NewAuthService(signingKey),
 	}
 }

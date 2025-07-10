@@ -30,14 +30,9 @@ func main() {
 		log.Println("failed to create postgres pool:", err)
 		os.Exit(1)
 	}
-	repo := repository.NewRepository(pool)
-	deps := services.Dependencies{
-		Repo:       repo,
-		SigningKey: os.Getenv("SIGNING_KEY"),
-	}
-	service := services.NewService(deps.Repo, deps.SigningKey)
-	handler := handlers.NewHandler(service)
-
+	var repo = repository.NewRepository(pool)
+	var service = services.NewService(repo, os.Getenv("SIGNING_KEY"))
+	var handler = handlers.NewHandler(service)
 	server := new(app.Server)
 
 	err = server.Run(os.Getenv("SERVER_PORT"), handler.InitRoutes())
