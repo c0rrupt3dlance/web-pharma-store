@@ -7,7 +7,7 @@ type Product struct {
 	Price       float32 `json:"price"`
 }
 
-type Categories struct {
+type Category struct {
 	Id   int    `json:"id"`
 	Name string `json:"name"`
 }
@@ -27,5 +27,10 @@ type ProductImage struct {
 
 type ProductResponse struct {
 	Product    Product
-	Categories []Categories
+	Categories []Category
+}
+
+type ProductInput struct {
+	Product    Product
+	Categories []int
 }
