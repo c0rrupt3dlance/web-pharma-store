@@ -84,7 +84,8 @@ func (r *ProductPostgres) GetById(ProductId int) (models.ProductResponse, error)
 	}
 	return p, nil
 }
-func (r *ProductPostgres) Update(product models.Product) error {
+func (r *ProductPostgres) Update(p models.ProductInput) error {
+	query := fmt.Sprintf(`UPDATE %s ps `)
 	return nil
 }
 func (r *ProductPostgres) Delete(ProductId int) error {
