@@ -6,7 +6,7 @@ import (
 )
 
 type Products interface {
-	Create(product models.Product) (int, error)
+	Create(product models.ProductInput) (int, error)
 	GetById(ProductId int) (models.ProductResponse, error)
 	Update(product models.Product) error
 	Delete(ProductId int) error

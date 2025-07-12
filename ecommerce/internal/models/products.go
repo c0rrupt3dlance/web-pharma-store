@@ -26,11 +26,11 @@ type ProductImage struct {
 }
 
 type ProductResponse struct {
-	Product    Product
-	Categories []Category
+	Product    Product    `json:"product"`
+	Categories []Category `json:"categories"`
 }
 
 type ProductInput struct {
-	Product    Product
-	Categories []int
+	Product    Product `json:"product"`
+	Categories []int   `json:"categoryIds"`
 }

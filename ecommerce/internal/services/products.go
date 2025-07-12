@@ -15,7 +15,7 @@ func NewProductsService(repo *repository.Repository) *ProductsService {
 	}
 }
 
-func (s *ProductsService) Create(product models.Product) (int, error) {
+func (s *ProductsService) Create(product models.ProductInput) (int, error) {
 	return s.repo.Create(product)
 }
 func (s *ProductsService) GetById(ProductId int) (models.ProductResponse, error) {
