@@ -114,8 +114,8 @@ func (r *ProductPostgres) Update(p models.UpdateProductInput) error {
 			get id from %s ct inner join %s pc 
 			on ct.id=pc.category_id where pc.product_id=$1
 		`)
-		deleteCateforyQuery := fmt.Sprintf(`
-			
+
+		deleteCateforyQuery := fmt.Sprintf(`				// Finish this and add query tmrw, delete this comment later
 		`)
 		for _, v := range p.Categories {
 			newCategoryIds[*v] = true
