@@ -72,6 +72,7 @@ func (r *ProductPostgres) GetById(ProductId int) (models.ProductResponse, error)
 		logrus.Println(err, "2")
 		return models.ProductResponse{}, err
 	}
+	defer rows.Close()
 	logrus.Println(rows)
 	for rows.Next() {
 		category := models.Category{}
@@ -84,8 +85,61 @@ func (r *ProductPostgres) GetById(ProductId int) (models.ProductResponse, error)
 	}
 	return p, nil
 }
-func (r *ProductPostgres) Update(p models.ProductInput) error {
-	query := fmt.Sprintf(`UPDATE %s ps `)
+func (r *ProductPostgres) Update(p models.UpdateProductInput) error {
+	setValues := make([]string, 0)
+	args := make([]interface{}, 0)
+	argsId := 1
+
+	if p.Name != nil {
+		setValues = append(setValues, fmt.Sprintf(`name=$%d`, argsId))
+		args = append(args, *p.Name)
+		argsId++
+	}
+
+	if p.Description != nil {
+		setValues = append(setValues, fmt.Sprintf(`name=$%d`, argsId))
+		args = append(args, *p.Description)
+		argsId++
+	}
+
+	if p.Price != nil {
+		setValues = append(setValues, fmt.Sprintf(`name=$%d`, argsId))
+		args = append(args, *p.Price)
+		argsId++
+	}
+
+	if p.Categories != nil {
+		newCategoryIds := make(map[int]bool)
+		getCategoriesQuery := fmt.Sprintf(`
+			get id from %s ct inner join %s pc 
+			on ct.id=pc.category_id where pc.product_id=$1
+		`)
+		deleteCateforyQuery := fmt.Sprintf(`
+			
+		`)
+		for _, v := range p.Categories {
+			newCategoryIds[*v] = true
+		}
+		rows, err := r.pool.Query(context.Background(), getCategoriesQuery, p.Id)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		currentCategoriesIds := make(map[int]bool)
+		for rows.Next() {
+			var currentCategory int
+			if err = rows.Scan(&currentCategory); err != nil {
+				return err
+			}
+			currentCategoriesIds[currentCategory] = true
+		}
+
+		for k, _ := range newCategoryIds {
+			if _, exists := currentCategoriesIds[k]; !exists {
+
+			}
+		}
+	}
 	return nil
 }
 func (r *ProductPostgres) Delete(ProductId int) error {

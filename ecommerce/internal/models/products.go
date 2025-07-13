@@ -32,5 +32,13 @@ type ProductResponse struct {
 
 type ProductInput struct {
 	Product    Product `json:"product"`
-	Categories []int   `json:"categoryIds"`
+	Categories []int   `json:"categoryIds,omitempty"`
+}
+
+type UpdateProductInput struct {
+	Id          int      `json:"id"`
+	Name        *string  `json:"name,omitempty"`
+	Description *string  `json:"description,omitempty"`
+	Price       *float32 `json:"price,omitempty"`
+	Categories  []*int   `json:"categories"`
 }
