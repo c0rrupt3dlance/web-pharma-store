@@ -6,6 +6,7 @@ import (
 	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
+	"strings"
 )
 
 const (
@@ -55,18 +56,18 @@ func (r *ProductPostgres) Create(p models.ProductInput) (int, error) {
 	return p.Product.Id, nil
 }
 
-func (r *ProductPostgres) GetById(ProductId int) (models.ProductResponse, error) {
+func (r *ProductPostgres) GetById(productId int) (models.ProductResponse, error) {
 	var p models.ProductResponse
 	query := fmt.Sprintf(`select * from %s where id=$1`, productsTable)
 	categoryQuery := fmt.Sprintf(`SELECT ct.id, ct.name from %s ct inner join
                       %s pc on ct.id = pc.category_id where pc.product_id = $1`, categoriesTable, productsCategoryTable)
-	row := r.pool.QueryRow(context.Background(), query, ProductId)
+	row := r.pool.QueryRow(context.Background(), query, productId)
 	if err := row.Scan(&p.Product.Id, &p.Product.Name, &p.Product.Description, &p.Product.Price); err != nil {
-		logrus.Println(err, "1", ProductId)
+		logrus.Println(err, "1", productId)
 		return models.ProductResponse{}, err
 	}
 
-	rows, err := r.pool.Query(context.Background(), categoryQuery, ProductId)
+	rows, err := r.pool.Query(context.Background(), categoryQuery, productId)
 
 	if err != nil {
 		logrus.Println(err, "2")
@@ -85,11 +86,15 @@ func (r *ProductPostgres) GetById(ProductId int) (models.ProductResponse, error)
 	}
 	return p, nil
 }
+
 func (r *ProductPostgres) Update(p models.UpdateProductInput) error {
 	setValues := make([]string, 0)
 	args := make([]interface{}, 0)
 	argsId := 1
-
+	tx, err := r.pool.Begin(context.Background())
+	if err != nil {
+		return err
+	}
 	if p.Name != nil {
 		setValues = append(setValues, fmt.Sprintf(`name=$%d`, argsId))
 		args = append(args, *p.Name)
@@ -97,30 +102,47 @@ func (r *ProductPostgres) Update(p models.UpdateProductInput) error {
 	}
 
 	if p.Description != nil {
-		setValues = append(setValues, fmt.Sprintf(`name=$%d`, argsId))
+		setValues = append(setValues, fmt.Sprintf(`description=$%d`, argsId))
 		args = append(args, *p.Description)
 		argsId++
 	}
 
 	if p.Price != nil {
-		setValues = append(setValues, fmt.Sprintf(`name=$%d`, argsId))
+		setValues = append(setValues, fmt.Sprintf(`price=$%d`, argsId))
 		args = append(args, *p.Price)
 		argsId++
+	}
+	args = append(args, p.Id)
+	values := strings.Join(setValues, ", ")
+	updateProductQuery := fmt.Sprintf(`
+			UPDATE %s SET %s WHERE id=$%d
+		`, productsTable, values, argsId)
+
+	_, err = tx.Exec(context.Background(), updateProductQuery, args...)
+	if err != nil {
+
+		logrus.Printf("error when updating product: %s", err)
+		tx.Rollback(context.Background())
+		return err
 	}
 
 	if p.Categories != nil {
 		newCategoryIds := make(map[int]bool)
-		getCategoriesQuery := fmt.Sprintf(`
-			get id from %s ct inner join %s pc 
-			on ct.id=pc.category_id where pc.product_id=$1
-		`)
 
-		deleteCateforyQuery := fmt.Sprintf(`				// Finish this and add query tmrw, delete this comment later
-		`)
+		getCategoriesQuery := fmt.Sprintf(`
+			SELECT category_id FROM %s WHERE product_id=$1
+		`, productsCategoryTable)
+		deleteCateforyQuery := fmt.Sprintf(`
+			DELETE FROM %s WHERE product_id = $1 and category_id=$2
+		`, productsCategoryTable)
+		addCategoryQuery := fmt.Sprintf(`
+			INSERT INTO %s (product_id, category_id) VALUES ($1, $2)
+		`, productsCategoryTable)
 		for _, v := range p.Categories {
 			newCategoryIds[*v] = true
 		}
 		rows, err := r.pool.Query(context.Background(), getCategoriesQuery, p.Id)
+
 		if err != nil {
 			return err
 		}
@@ -129,6 +151,7 @@ func (r *ProductPostgres) Update(p models.UpdateProductInput) error {
 		for rows.Next() {
 			var currentCategory int
 			if err = rows.Scan(&currentCategory); err != nil {
+				logrus.Printf("error when getting categories: %s", err)
 				return err
 			}
 			currentCategoriesIds[currentCategory] = true
@@ -136,12 +159,31 @@ func (r *ProductPostgres) Update(p models.UpdateProductInput) error {
 
 		for k, _ := range newCategoryIds {
 			if _, exists := currentCategoriesIds[k]; !exists {
-
+				_, err = tx.Exec(context.Background(), addCategoryQuery, p.Id, k)
+				if err != nil {
+					logrus.Printf("addCategoryQuery: %s, pr_id: %d, cat_id: %d", addCategoryQuery, p.Id, k)
+					tx.Rollback(context.Background())
+					return err
+				}
 			}
 		}
+
+		for k, _ := range currentCategoriesIds {
+			if _, exists := newCategoryIds[k]; !exists {
+				_, err = tx.Exec(context.Background(), deleteCateforyQuery, p.Id, k)
+				if err != nil {
+					tx.Rollback(context.Background())
+					return err
+				}
+			}
+		}
+
+	}
+	if err = tx.Commit(context.Background()); err != nil {
+		return err
 	}
 	return nil
 }
-func (r *ProductPostgres) Delete(ProductId int) error {
+func (r *ProductPostgres) Delete(productId int) error {
 	return nil
 }

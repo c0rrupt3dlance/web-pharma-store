@@ -52,5 +52,39 @@ func (h *Handler) Create(c *gin.Context) {
 		"message": productId,
 	})
 }
+
+func (h *Handler) Update(c *gin.Context) {
+	var updateProductInput models.UpdateProductInput
+
+	productId := c.Param("id")
+	var err error
+	updateProductInput.Id, err = strconv.Atoi(productId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "invalid product id",
+		})
+		return
+	}
+
+	if err := c.ShouldBindJSON(&updateProductInput); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "invalid input data",
+		})
+		return
+	}
+
+	err = h.services.Update(updateProductInput)
+	if err != nil {
+		logrus.Println(err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "something went wrong",
+		})
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{
+		"message": "succesfully updated",
+	})
+}
+
 func (h *Handler) Delete(c *gin.Context) {}
-func (h *Handler) Update(c *gin.Context) {}

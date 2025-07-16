@@ -32,7 +32,7 @@ type ProductResponse struct {
 
 type ProductInput struct {
 	Product    Product `json:"product"`
-	Categories []int   `json:"categoryIds,omitempty"`
+	Categories []int   `json:"category_ids,omitempty"`
 }
 
 type UpdateProductInput struct {

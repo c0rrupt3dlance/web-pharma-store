@@ -21,7 +21,7 @@ func (s *ProductsService) Create(product models.ProductInput) (int, error) {
 func (s *ProductsService) GetById(ProductId int) (models.ProductResponse, error) {
 	return s.repo.GetById(ProductId)
 }
-func (s *ProductsService) Update(product models.Product) error {
+func (s *ProductsService) Update(product models.UpdateProductInput) error {
 	return s.repo.Update(product)
 }
 func (s *ProductsService) Delete(ProductId int) error {
