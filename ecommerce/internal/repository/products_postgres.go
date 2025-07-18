@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -117,22 +118,27 @@ func (r *ProductPostgres) Update(p models.UpdateProductInput) error {
 	updateProductQuery := fmt.Sprintf(`
 			UPDATE %s SET %s WHERE id=$%d
 		`, productsTable, values, argsId)
+	if len(setValues) > 0 {
+		_, err = tx.Exec(context.Background(), updateProductQuery, args...)
+		if err != nil {
 
-	_, err = tx.Exec(context.Background(), updateProductQuery, args...)
-	if err != nil {
-
-		logrus.Printf("error when updating product: %s", err)
+			logrus.Printf("error when updating product: %s", err)
+			tx.Rollback(context.Background())
+			return err
+		}
+	} else {
 		tx.Rollback(context.Background())
-		return err
+		return errors.New("no fields provided for update")
 	}
 
 	if p.Categories != nil {
 		newCategoryIds := make(map[int]bool)
+		currentCategoriesIds := make(map[int]bool)
 
 		getCategoriesQuery := fmt.Sprintf(`
 			SELECT category_id FROM %s WHERE product_id=$1
 		`, productsCategoryTable)
-		deleteCateforyQuery := fmt.Sprintf(`
+		deleteCategoryQuery := fmt.Sprintf(`
 			DELETE FROM %s WHERE product_id = $1 and category_id=$2
 		`, productsCategoryTable)
 		addCategoryQuery := fmt.Sprintf(`
@@ -141,13 +147,12 @@ func (r *ProductPostgres) Update(p models.UpdateProductInput) error {
 		for _, v := range p.Categories {
 			newCategoryIds[*v] = true
 		}
-		rows, err := r.pool.Query(context.Background(), getCategoriesQuery, p.Id)
 
+		rows, err := tx.Query(context.Background(), getCategoriesQuery, p.Id)
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
-		currentCategoriesIds := make(map[int]bool)
 		for rows.Next() {
 			var currentCategory int
 			if err = rows.Scan(&currentCategory); err != nil {
@@ -170,7 +175,7 @@ func (r *ProductPostgres) Update(p models.UpdateProductInput) error {
 
 		for k, _ := range currentCategoriesIds {
 			if _, exists := newCategoryIds[k]; !exists {
-				_, err = tx.Exec(context.Background(), deleteCateforyQuery, p.Id, k)
+				_, err = tx.Exec(context.Background(), deleteCategoryQuery, p.Id, k)
 				if err != nil {
 					tx.Rollback(context.Background())
 					return err
