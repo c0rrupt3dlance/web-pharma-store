@@ -58,12 +58,16 @@ func (r *ProductPostgres) Create(p models.ProductInput) (int, error) {
 }
 
 func (r *ProductPostgres) GetById(productId int) (models.ProductResponse, error) {
-	var p models.ProductResponse
-	query := fmt.Sprintf(`select * from %s where id=$1`, productsTable)
+	var p = models.ProductResponse{
+		Product: models.Product{
+			Id: productId,
+		},
+	}
+	query := fmt.Sprintf(`select name, description, price from %s where id=$1`, productsTable)
 	categoryQuery := fmt.Sprintf(`SELECT ct.id, ct.name from %s ct inner join
                       %s pc on ct.id = pc.category_id where pc.product_id = $1`, categoriesTable, productsCategoryTable)
 	row := r.pool.QueryRow(context.Background(), query, productId)
-	if err := row.Scan(&p.Product.Id, &p.Product.Name, &p.Product.Description, &p.Product.Price); err != nil {
+	if err := row.Scan(&p.Product.Name, &p.Product.Description, &p.Product.Price); err != nil {
 		logrus.Println(err, "1", productId)
 		return models.ProductResponse{}, err
 	}
