@@ -190,5 +190,11 @@ func (r *ProductPostgres) Update(p models.UpdateProductInput) error {
 	return nil
 }
 func (r *ProductPostgres) Delete(productId int) error {
+	query := fmt.Sprintf(`DELETE FROM %s WHERE id=$1`, productsTable)
+	_, err := r.pool.Exec(context.Background(), query, productId)
+	if err != nil {
+		logrus.Printf("failed to delete product with %d id", productId)
+		return err
+	}
 	return nil
 }
