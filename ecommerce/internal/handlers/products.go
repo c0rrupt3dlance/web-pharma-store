@@ -87,4 +87,22 @@ func (h *Handler) Update(c *gin.Context) {
 	})
 }
 
-func (h *Handler) Delete(c *gin.Context) {}
+func (h *Handler) Delete(c *gin.Context) {
+	var productId int
+
+	strId := c.Param("id")
+	productId, err := strconv.Atoi(strId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "invalid product id",
+		})
+		return
+	}
+
+	err = h.services.Delete(productId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "couldn't delete the product",
+		})
+	}
+}
