@@ -1,17 +1,20 @@
 package handlers
 
 import (
+	"context"
 	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/services"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
 	services *services.Service
+	ctx      context.Context
 }
 
-func NewHandler(services *services.Service) *Handler {
+func NewHandler(ctx context.Context, services *services.Service) *Handler {
 	return &Handler{
 		services: services,
+		ctx:      ctx,
 	}
 }
 
@@ -30,6 +33,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		products := api.Group("/products")
 		{
 			products.GET("/:id", h.GetById)
+			products.GET("/get_by_category", h.GetByCategories)
 			products.POST("/", h.Create)
 			products.PUT("/:id", h.Update)
 			products.DELETE("/:id", h.Delete)

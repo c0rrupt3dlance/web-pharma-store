@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/app"
 	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/handlers"
 	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/repository"
@@ -25,14 +26,15 @@ func main() {
 			Password: os.Getenv("POSTGRES_PASSWORD"),
 			Database: os.Getenv("POSTGRES_DB"),
 		},
+		context.Background(),
 	)
 	if err != nil {
 		log.Println("failed to create postgres pool:", err)
 		os.Exit(1)
 	}
 	var repo = repository.NewRepository(pool)
-	var service = services.NewService(repo, os.Getenv("SIGNING_KEY"))
-	var handler = handlers.NewHandler(service)
+	var service = services.NewService(repo, os.Getenv("SIGNING_KEY"), context.Background())
+	var handler = handlers.NewHandler(context.Background(), service)
 	server := new(app.Server)
 
 	err = server.Run(os.Getenv("SERVER_PORT"), handler.InitRoutes())

@@ -1,15 +1,17 @@
 package services
 
 import (
+	"context"
 	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/models"
 	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/repository"
 )
 
 type Products interface {
-	Create(product models.ProductInput) (int, error)
-	GetById(ProductId int) (models.ProductResponse, error)
-	Update(product models.UpdateProductInput) error
-	Delete(ProductId int) error
+	Create(ctx context.Context, product models.ProductInput) (int, error)
+	GetById(ctx context.Context, ProductId int) (models.ProductResponse, error)
+	Update(ctx context.Context, productId int, product models.UpdateProductInput) error
+	Delete(ctx context.Context, ProductId int) error
+	GetByCategories(ctx context.Context, categoriesId []int) ([]models.ProductResponse, error)
 }
 
 type Authorization interface {
@@ -30,7 +32,7 @@ type Service struct {
 	Cart
 }
 
-func NewService(repo *repository.Repository, signingKey string) *Service {
+func NewService(repo *repository.Repository, signingKey string, ctx context.Context) *Service {
 	return &Service{
 		Products:      NewProductsService(repo),
 		Authorization: NewAuthService(signingKey),
