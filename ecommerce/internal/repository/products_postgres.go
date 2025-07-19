@@ -213,26 +213,27 @@ func (r *ProductPostgres) GetByCategories(ctx context.Context, categoriesId []in
 	}
 	categories := strings.Join(setCategories, ", ")
 	query := fmt.Sprintf(`
-		select pt.* 
-		from %s pt 
-		inner join %s pc on pt.id=pc.product_id in (%s) 
-		group by pt.id 
-		having count(distinct pc.category_id)=3; 
+		SELECT pt.* 
+		FROM %s pt 
+		INNER JOIN %s pc ON pt.id=pc.product_id where pc.category_id IN (%s) 
+		GROUP BY pt.id 
+		HAVING COUNT(DISTINCT pc.category_id)=%d; 
 	`, productsTable, productsCategoryTable, categories, len(categoriesId))
 
-	rows, err := r.pool.Query(ctx, query, intSliceToAnySlice(categoriesId))
+	rows, err := r.pool.Query(ctx, query, intSliceToAnySlice(categoriesId)...)
 	if err != nil {
 		logrus.Printf(`
 			couldn't get rows from the db
 			current query: %s
 			error from db: %s
-		`, query, err)
+			cat_ids: %s
+		`, query, err, categoriesId)
 		return nil, errors.New("error during getting rows")
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var p models.ProductResponse
-		if err = rows.Scan(&p.Product.Id, &p.Product.Name, p.Product.Price, p.Product.Description); err != nil {
+		if err = rows.Scan(&p.Product.Id, &p.Product.Name, &p.Product.Description, &p.Product.Price); err != nil {
 			logrus.Printf(`
 			couldn't scan product from the rows
 			error from db: %s

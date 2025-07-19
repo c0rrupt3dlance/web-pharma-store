@@ -107,5 +107,25 @@ func (h *Handler) Delete(c *gin.Context) {
 	}
 }
 
+type categoryIds struct {
+	Ids []int `json:"categoryIds"`
+}
+
 func (h *Handler) GetByCategories(c *gin.Context) {
+	var i categoryIds
+
+	if err := c.ShouldBindJSON(&i); err != nil {
+		logrus.Printf("user tried to put invalid data%s\n")
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid data"})
+		return
+	}
+
+	products, err := h.services.GetByCategories(h.ctx, i.Ids)
+	if err != nil {
+		logrus.Println("error from service GetByCategories method:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "invalid data"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": products})
 }
