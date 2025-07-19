@@ -32,7 +32,7 @@ type Service struct {
 	Cart
 }
 
-func NewService(repo *repository.Repository, signingKey string, ctx context.Context) *Service {
+func NewService(repo *repository.Repository, signingKey string) *Service {
 	return &Service{
 		Products:      NewProductsService(repo),
 		Authorization: NewAuthService(signingKey),

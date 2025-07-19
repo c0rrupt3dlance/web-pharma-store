@@ -33,7 +33,7 @@ func main() {
 		os.Exit(1)
 	}
 	var repo = repository.NewRepository(pool)
-	var service = services.NewService(repo, os.Getenv("SIGNING_KEY"), context.Background())
+	var service = services.NewService(repo, os.Getenv("SIGNING_KEY"))
 	var handler = handlers.NewHandler(context.Background(), service)
 	server := new(app.Server)
 
