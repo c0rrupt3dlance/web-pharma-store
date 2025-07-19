@@ -25,14 +25,14 @@ type PgConfig struct {
 	Password string
 }
 
-func NewPgPool(cfg PgConfig) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.New(context.Background(), fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database))
+func NewPgPool(cfg PgConfig, ctx context.Context) (*pgxpool.Pool, error) {
+	pool, err := pgxpool.New(ctx, fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database))
 	if err != nil {
 		logrus.Printf("fail due to %s", err)
 		return nil, errors.New("unable to connect to postgres db")
 	}
 
-	err = pool.Ping(context.Background())
+	err = pool.Ping(ctx)
 	if err != nil {
 		return nil, err
 	}

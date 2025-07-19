@@ -26,8 +26,8 @@ type ProductImage struct {
 }
 
 type ProductResponse struct {
-	Product    Product    `json:"product"`
-	Categories []Category `json:"categories"`
+	Product    Product     `json:"product"`
+	Categories []*Category `json:"categories,omitempty"`
 }
 
 type ProductInput struct {
@@ -36,7 +36,6 @@ type ProductInput struct {
 }
 
 type UpdateProductInput struct {
-	Id          int      `json:"id"`
 	Name        *string  `json:"name,omitempty"`
 	Description *string  `json:"description,omitempty"`
 	Price       *float32 `json:"price,omitempty"`

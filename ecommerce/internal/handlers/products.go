@@ -17,7 +17,7 @@ func (h *Handler) GetById(c *gin.Context) {
 		return
 	}
 
-	productResponse, err := h.services.GetById(productId)
+	productResponse, err := h.services.GetById(h.ctx, productId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "something went wrong",
@@ -40,7 +40,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 	logrus.Println(productInput)
 
-	productId, err := h.services.Create(productInput)
+	productId, err := h.services.Create(h.ctx, productInput)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "something went wrong",
@@ -56,9 +56,9 @@ func (h *Handler) Create(c *gin.Context) {
 func (h *Handler) Update(c *gin.Context) {
 	var updateProductInput models.UpdateProductInput
 
-	productId := c.Param("id")
+	strId := c.Param("id")
 	var err error
-	updateProductInput.Id, err = strconv.Atoi(productId)
+	productId, err := strconv.Atoi(strId)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "invalid product id",
@@ -73,7 +73,7 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	err = h.services.Update(updateProductInput)
+	err = h.services.Update(h.ctx, productId, updateProductInput)
 	if err != nil {
 		logrus.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -99,10 +99,13 @@ func (h *Handler) Delete(c *gin.Context) {
 		return
 	}
 
-	err = h.services.Delete(productId)
+	err = h.services.Delete(h.ctx, productId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "couldn't delete the product",
 		})
 	}
+}
+
+func (h *Handler) GetByCategories(c *gin.Context) {
 }
