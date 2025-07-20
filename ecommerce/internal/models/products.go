@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type Product struct {
 	Id          int     `json:"id"`
 	Name        string  `json:"name,omitempty" binding:"required"`
@@ -17,14 +19,6 @@ type ProductCategories struct {
 	CategoryId int
 }
 
-type ProductImage struct {
-	Id        int    `json:"id"`
-	ProductId int    `json:"product_id"`
-	ImageUrl  string `json:"image_url"`
-	AltText   string `json:"alt_text"`
-	IsMain    bool   `json:"is_main"`
-}
-
 type ProductResponse struct {
 	Product    Product     `json:"product"`
 	Categories []*Category `json:"categories,omitempty"`
@@ -40,4 +34,18 @@ type UpdateProductInput struct {
 	Description *string  `json:"description,omitempty"`
 	Price       *float32 `json:"price,omitempty"`
 	Categories  []*int   `json:"categories"`
+}
+
+type Media struct {
+	Id          int       `json:"id"`
+	Bucket      string    `json:"bucket"`
+	ObjectKey   string    `json:"object_key"`
+	ContentType string    `json:"content_type"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type ProductMedia struct {
+	Id        int
+	ProductId int
+	MediaId   int
 }
