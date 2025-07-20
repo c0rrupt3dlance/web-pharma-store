@@ -108,7 +108,7 @@ func (h *Handler) Delete(c *gin.Context) {
 }
 
 type categoryIds struct {
-	Ids []int `json:"categoryIds"`
+	Ids []int `json:"category_ids"`
 }
 
 func (h *Handler) GetByCategories(c *gin.Context) {
