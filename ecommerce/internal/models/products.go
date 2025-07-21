@@ -33,7 +33,7 @@ type UpdateProductInput struct {
 	Name        *string  `json:"name,omitempty"`
 	Description *string  `json:"description,omitempty"`
 	Price       *float32 `json:"price,omitempty"`
-	Categories  []*int   `json:"categories"`
+	Categories  []*int   `json:"category_ids"`
 }
 
 type Media struct {

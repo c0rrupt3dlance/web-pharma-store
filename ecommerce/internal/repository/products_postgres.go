@@ -149,6 +149,7 @@ func (r *ProductPostgres) Update(ctx context.Context, productId int, p models.Up
 			INSERT INTO %s (product_id, category_id) VALUES ($1, $2)
 		`, productsCategoryTable)
 		for _, v := range p.Categories {
+			logrus.Println(*v)
 			newCategoryIds[*v] = true
 		}
 
