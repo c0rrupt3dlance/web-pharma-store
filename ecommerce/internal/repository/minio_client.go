@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/models"
-	"github.com/google/uuid"
-	"net/url"
 	"sync"
 	"time"
 
@@ -52,26 +50,19 @@ func NewMinioClient(ctx context.Context, endpoint, accessKey, secretKey, bucket 
 	}, nil
 }
 
-type FileDataTypeWithNumeration struct {
-	Number   int
-	ObjectId string
-	Url      url.URL
-}
-
-func (r *MinioClient) CreateMany(data []models.FileDataType) ([]string, error) {
-	urls := make([]string, len(data))
+func (r *MinioClient) Create(data map[string]models.FileDataType) (map[string]string, error) {
+	urls := make(map[string]string, len(data))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	urlCh := make(chan FileDataTypeWithNumeration, len(data))
+	urlCh := make(chan models.MediaUrl, len(data))
 
 	var wg sync.WaitGroup
 
-	for i, file := range data {
-		objectId := uuid.New().String()
+	for objectId, file := range data {
 		wg.Add(1)
-		go func(i int, objectId string, file models.FileDataType) {
+		go func(objectId string, file models.FileDataType) {
 			defer wg.Done()
 			_, err := r.Client.PutObject(ctx, r.Bucket, objectId, bytes.NewReader(file.Data),
 				int64(len(file.Data)), minio.PutObjectOptions{})
@@ -86,14 +77,11 @@ func (r *MinioClient) CreateMany(data []models.FileDataType) ([]string, error) {
 				return
 			}
 
-			link := FileDataTypeWithNumeration{
-				i,
-				objectId,
-				*Url,
+			urlCh <- models.MediaUrl{
+				ObjectId: objectId,
+				Url:      Url.String(),
 			}
-
-			urlCh <- link
-		}(i, objectId, file)
+		}(objectId, file)
 
 	}
 
@@ -103,7 +91,7 @@ func (r *MinioClient) CreateMany(data []models.FileDataType) ([]string, error) {
 	}()
 
 	for link := range urlCh {
-		urls[link.Number] = link.Url.String()
+		urls[link.ObjectId] = link.Url
 	}
 
 	_ = len(urls)

@@ -40,7 +40,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 	logrus.Println(productInput)
 
-	productId, err := h.services.Create(h.ctx, productInput)
+	productId, err := h.services.Products.Create(h.ctx, productInput)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "something went wrong",
@@ -73,7 +73,7 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	err = h.services.Update(h.ctx, productId, updateProductInput)
+	err = h.services.Products.Update(h.ctx, productId, updateProductInput)
 	if err != nil {
 		logrus.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -99,7 +99,7 @@ func (h *Handler) Delete(c *gin.Context) {
 		return
 	}
 
-	err = h.services.Delete(h.ctx, productId)
+	err = h.services.Products.Delete(h.ctx, productId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "couldn't delete the product",
@@ -120,7 +120,7 @@ func (h *Handler) GetByCategories(c *gin.Context) {
 		return
 	}
 
-	products, err := h.services.GetByCategories(h.ctx, i.Ids)
+	products, err := h.services.Products.GetByCategories(h.ctx, i.Ids)
 	if err != nil {
 		logrus.Println("error from service GetByCategories method:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "invalid data"})

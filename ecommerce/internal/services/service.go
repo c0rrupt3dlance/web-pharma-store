@@ -26,10 +26,15 @@ type Cart interface {
 	ClearCart(userId int) error
 }
 
+type FileStorage interface {
+	Create(data map[string]models.FileDataType) (map[string]string, error)
+}
+
 type Service struct {
 	Products
 	Authorization
 	Cart
+	FileStorage
 }
 
 func NewService(repo *repository.Repository, signingKey string) *Service {
