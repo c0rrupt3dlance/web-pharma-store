@@ -27,7 +27,7 @@ type Cart interface {
 }
 
 type FileStorage interface {
-	Create(data map[string]models.FileDataType) (map[string]string, error)
+	Add(productId int, mediaFiles []models.FileDataType) (map[string]string, error)
 }
 
 type Service struct {

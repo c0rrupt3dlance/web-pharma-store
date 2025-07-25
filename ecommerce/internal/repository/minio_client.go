@@ -12,88 +12,40 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type MinioClient struct {
-	Client *minio.Client
-	Bucket string
+type MediaConfig struct {
+	Endpoint  string
+	AccessKey string
+	SecretKey string
+	Bucket    string
+	UseSSL    bool
 }
 
-func NewMinioClient(ctx context.Context, endpoint, accessKey, secretKey, bucket string, useSSL bool) (*MinioClient, error) {
-	client, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
-		Secure: useSSL,
+func NewMinioClient(ctx context.Context, cfg MediaConfig) (*minio.Client, error) {
+	client, err := minio.New(cfg.Endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
+		Secure: cfg.UseSSL,
 	})
 	if err != nil {
 		logrus.Println("error when creating minio client")
 		return nil, err
 	}
 
-	exists, err := client.BucketExists(ctx, bucket)
+	exists, err := client.BucketExists(ctx, cfg.Bucket)
 	if err != nil {
-		logrus.Println("error during checking if bucket exists")
+		logrus.Println("error during checking if Bucket exists")
 		return nil, err
 	}
 
 	if !exists {
-		err = client.MakeBucket(ctx, bucket, minio.MakeBucketOptions{})
+		err = client.MakeBucket(ctx, cfg.Bucket, minio.MakeBucketOptions{})
 		if err != nil {
-			logrus.Println("error when creating bucket")
+			logrus.Println("error when creating Bucket")
 			return nil, err
 		}
-		logrus.Printf("bucket %s created successfully", bucket)
+		logrus.Printf("Bucket %s created successfully", cfg.Bucket)
 	} else {
-		logrus.Printf("bucket %s already exists", bucket)
+		logrus.Printf("Bucket %s already exists", cfg.Bucket)
 	}
 
-	return &MinioClient{
-		Client: client,
-		Bucket: bucket,
-	}, nil
-}
-
-func (r *MinioClient) Create(data map[string]models.FileDataType) (map[string]string, error) {
-	urls := make(map[string]string, len(data))
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	urlCh := make(chan models.MediaUrl, len(data))
-
-	var wg sync.WaitGroup
-
-	for objectId, file := range data {
-		wg.Add(1)
-		go func(objectId string, file models.FileDataType) {
-			defer wg.Done()
-			_, err := r.Client.PutObject(ctx, r.Bucket, objectId, bytes.NewReader(file.Data),
-				int64(len(file.Data)), minio.PutObjectOptions{})
-			if err != nil {
-				cancel()
-				return
-			}
-
-			Url, err := r.Client.PresignedGetObject(ctx, r.Bucket, objectId, time.Second*24*60*60, nil)
-			if err != nil {
-				cancel()
-				return
-			}
-
-			urlCh <- models.MediaUrl{
-				ObjectId: objectId,
-				Url:      Url.String(),
-			}
-		}(objectId, file)
-
-	}
-
-	go func() {
-		wg.Wait()
-		close(urlCh)
-	}()
-
-	for link := range urlCh {
-		urls[link.ObjectId] = link.Url
-	}
-
-	_ = len(urls)
-	return urls, nil
+	return client, nil
 }

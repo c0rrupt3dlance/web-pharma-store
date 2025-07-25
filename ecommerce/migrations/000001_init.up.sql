@@ -26,7 +26,7 @@ CREATE TABLE product_images (
 
 CREATE TABLE media(
     id SERIAL PRIMARY KEY,
-    bucket VARCHAR(100) NOT NULL,
+    Bucket VARCHAR(100) NOT NULL,
     object_key TEXT NOT NULL,
     content_type VARCHAR(100),
     created_at TIMESTAMP DEFAULT now()

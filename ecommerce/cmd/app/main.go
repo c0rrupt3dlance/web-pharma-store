@@ -32,6 +32,18 @@ func main() {
 		log.Println("failed to create postgres pool:", err)
 		os.Exit(1)
 	}
+
+	minioClient, err := repository.NewMinioClient(
+		context.Background(),
+		repository.MediaConfig{
+			os.Getenv("MINIO_ENDPOINT"),
+			os.Getenv("MINIO_ACCESS_KEY"),
+			os.Getenv("MINIO_SECRET_KEY"),
+			os.Getenv("MINIO_BUCKET"),
+			true,
+		},
+	)
+
 	var repo = repository.NewRepository(pool)
 	var service = services.NewService(repo, os.Getenv("SIGNING_KEY"))
 	var handler = handlers.NewHandler(context.Background(), service)

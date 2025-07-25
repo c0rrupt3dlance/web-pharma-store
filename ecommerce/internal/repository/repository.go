@@ -4,6 +4,7 @@ import (
 	"context"
 	models "github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/minio/minio-go/v7"
 )
 
 type Products interface {
@@ -21,13 +22,19 @@ type Cart interface {
 	GetCart(userId int) ([]models.CartItem, error)
 	ClearCart(userId int) error
 }
+
+type FileStorage interface {
+	Add(data map[string]models.FileDataType) (map[string]string, error)
+}
 type Repository struct {
 	Products
 	Cart
+	FileStorage
 }
 
-func NewRepository(pool *pgxpool.Pool) *Repository {
+func NewRepository(pool *pgxpool.Pool, client *minio.Client, bucket string) *Repository {
 	return &Repository{
-		Products: NewProductPostgres(pool),
+		Products:    NewProductPostgres(pool),
+		FileStorage: NewMinioFileStorage(client, bucket),
 	}
 }

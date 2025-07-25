@@ -13,46 +13,47 @@ func (h *Handler) Upload(c *gin.Context) {
 	productId, err := strconv.Atoi(strId)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "invalid id",
+			"message": "invalid product id",
 		})
 		return
 	}
+
 	form, err := c.MultipartForm()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "invalid form",
+			"message": "invalid multiform",
 		})
 		return
 	}
-
 	files := form.File["media"]
 	if len(files) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "no files uploaded",
+			"message": "no file was uploaded",
 		})
 		return
 	}
-
 	mediaFiles := make([]models.FileDataType, len(files))
 
 	for _, fileHeader := range files {
 		file, err := fileHeader.Open()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "cannot open uploaded file"})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "cannot open uploaded file",
+			})
 			return
 		}
 		defer file.Close()
 
 		data, err := io.ReadAll(file)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "cannot read file content"})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "cannot open uploaded file",
+			})
 			return
 		}
-
 		mediaFiles = append(mediaFiles, models.FileDataType{
 			FileName: fileHeader.Filename,
 			Data:     data,
 		})
 	}
-
 }
