@@ -27,7 +27,7 @@ type Cart interface {
 }
 
 type FileStorage interface {
-	Add(productId int, mediaFiles []models.FileDataType) (map[string]string, error)
+	AddMedia(ctx context.Context, productId int, mediaFiles []models.FileDataType) ([]models.MediaUrl, error)
 }
 
 type Service struct {
@@ -41,5 +41,6 @@ func NewService(repo *repository.Repository, signingKey string) *Service {
 	return &Service{
 		Products:      NewProductsService(repo),
 		Authorization: NewAuthService(signingKey),
+		FileStorage:   NewFileStorageService(repo.FileStorage, repo.Products),
 	}
 }

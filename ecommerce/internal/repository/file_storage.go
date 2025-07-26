@@ -22,7 +22,7 @@ func NewMinioFileStorage(client *minio.Client, bucket string) *MinioFileStorage 
 }
 
 func (r *MinioFileStorage) Add(data map[string]models.FileDataType) (map[string]string, error) {
-	urls := make(map[string]string, len(data))
+	urls := make(map[string]string)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -36,7 +36,9 @@ func (r *MinioFileStorage) Add(data map[string]models.FileDataType) (map[string]
 		go func(objectId string, file models.FileDataType) {
 			defer wg.Done()
 			_, err := r.Client.PutObject(ctx, r.Bucket, objectId, bytes.NewReader(file.Data),
-				int64(len(file.Data)), minio.PutObjectOptions{})
+				int64(len(file.Data)), minio.PutObjectOptions{
+					ContentType: file.DataType,
+				})
 			if err != nil {
 				cancel()
 				return

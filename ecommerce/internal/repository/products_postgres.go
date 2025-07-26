@@ -14,6 +14,7 @@ const (
 	productsTable         = "products"
 	categoriesTable       = "categories"
 	productsCategoryTable = "products_category"
+	productsMediaTable    = "products_media"
 )
 
 type ProductPostgres struct {
@@ -251,4 +252,26 @@ func intSliceToAnySlice(s []int) []any {
 		anySlice[i] = v
 	}
 	return anySlice
+}
+
+func (r *ProductPostgres) AddProductMedia(ctx context.Context, productId int, keys []string) error {
+	tx, err := r.pool.Begin(ctx)
+	defer tx.Commit(ctx)
+	if err != nil {
+		return err
+	}
+	query := fmt.Sprintf(`
+		INSERT INTO %s(product_id, media_id) VALUES($1, $2)
+	`, productsMediaTable)
+
+	for _, v := range keys {
+		_, err = tx.Exec(ctx, query, productId, v)
+		if err != nil {
+			tx.Rollback(ctx)
+			return err
+		}
+	}
+
+	logrus.Println(productId, "got new media files")
+	return nil
 }

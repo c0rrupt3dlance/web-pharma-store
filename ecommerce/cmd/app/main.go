@@ -40,11 +40,11 @@ func main() {
 			os.Getenv("MINIO_ACCESS_KEY"),
 			os.Getenv("MINIO_SECRET_KEY"),
 			os.Getenv("MINIO_BUCKET"),
-			true,
+			false,
 		},
 	)
 
-	var repo = repository.NewRepository(pool)
+	var repo = repository.NewRepository(pool, minioClient, os.Getenv("MINIO_BUCKET"))
 	var service = services.NewService(repo, os.Getenv("SIGNING_KEY"))
 	var handler = handlers.NewHandler(context.Background(), service)
 	server := new(app.Server)

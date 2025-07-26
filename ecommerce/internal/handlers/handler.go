@@ -39,6 +39,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 			products.DELETE("/:id", h.Delete)
 			products.GET("/cart")
 			products.POST("/:id/add_to_cart")
+			products.POST("/:id/media", h.Upload)
 			products.DELETE("/cart/")
 		}
 

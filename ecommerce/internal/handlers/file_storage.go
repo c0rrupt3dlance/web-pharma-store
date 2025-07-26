@@ -32,7 +32,7 @@ func (h *Handler) Upload(c *gin.Context) {
 		})
 		return
 	}
-	mediaFiles := make([]models.FileDataType, len(files))
+	var mediaFiles []models.FileDataType
 
 	for _, fileHeader := range files {
 		file, err := fileHeader.Open()
@@ -54,6 +54,17 @@ func (h *Handler) Upload(c *gin.Context) {
 		mediaFiles = append(mediaFiles, models.FileDataType{
 			FileName: fileHeader.Filename,
 			Data:     data,
+			DataType: fileHeader.Header.Get("Content-Type"),
 		})
 	}
+
+	urls, err := h.services.FileStorage.AddMedia(h.ctx, productId, mediaFiles)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "got some problems",
+		})
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{"data": urls})
 }

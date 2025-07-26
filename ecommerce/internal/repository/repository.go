@@ -13,6 +13,7 @@ type Products interface {
 	Update(ctx context.Context, productId int, product models.UpdateProductInput) error
 	Delete(ctx context.Context, ProductId int) error
 	GetByCategories(ctx context.Context, categoriesId []int) ([]models.ProductResponse, error)
+	AddProductMedia(ctx context.Context, productId int, keys []string) error
 }
 
 type Cart interface {

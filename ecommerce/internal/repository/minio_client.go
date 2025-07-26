@@ -1,11 +1,7 @@
 package repository
 
 import (
-	"bytes"
 	"context"
-	"github.com/c0rrupt3dlance/web-pharma-store/ecommerce/internal/models"
-	"sync"
-	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -32,7 +28,7 @@ func NewMinioClient(ctx context.Context, cfg MediaConfig) (*minio.Client, error)
 
 	exists, err := client.BucketExists(ctx, cfg.Bucket)
 	if err != nil {
-		logrus.Println("error during checking if Bucket exists")
+		logrus.Println("error during checking if Bucket exists", err)
 		return nil, err
 	}
 
@@ -46,6 +42,6 @@ func NewMinioClient(ctx context.Context, cfg MediaConfig) (*minio.Client, error)
 	} else {
 		logrus.Printf("Bucket %s already exists", cfg.Bucket)
 	}
-
+	logrus.Println("minio client was created successfully")
 	return client, nil
 }

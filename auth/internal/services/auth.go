@@ -2,12 +2,10 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/models"
 	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
 	uuid "github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 )
@@ -81,15 +79,13 @@ func (s *AuthService) VerifyAccessToken(tokenString string) (models.User, error)
 	token, err := jwt.ParseWithClaims(tokenString, &tokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
-			return nil, fmt.Errorf("unexpected signing method")
+			return nil, errors.New("invalid signing method")
 		}
+
 		return []byte(s.signingKey), nil
 	})
 
 	if err != nil {
-		if errors.Is(err, jwt.ErrTokenExpired) {
-			return models.User{}, errors.New("access token expired")
-		}
 		return models.User{}, err
 	}
 
@@ -106,38 +102,35 @@ func (s *AuthService) VerifyAccessToken(tokenString string) (models.User, error)
 func (s *AuthService) RefreshTokens(refreshToken string) (string, string, error) {
 	tokenRecord, err := s.repo.GetRefreshToken(refreshToken)
 	if err != nil || tokenRecord.Revoked || tokenRecord.ExpiresAt.Before(time.Now()) {
-		logrus.Println(err)
 		return "", "", err
 	}
 
 	err = s.repo.RevokeRefreshToken(refreshToken)
 	if err != nil {
-		logrus.Println(err, "RevokeRefreshToken")
-		return "", "", errors.New("can't revoke token")
+		return "", "", err
 	}
 
 	user, err := s.repo.GetUserById(tokenRecord.UserId)
 	if err != nil {
-		logrus.Println(err, "GetUserById")
-		return "", "", errors.New("internal error")
-	}
-
-	newRefresh, err := s.generateRefreshToken(user.Id)
-	if err != nil {
-		logrus.Println(err, "generateRefreshToken")
 		return "", "", err
 	}
 
-	newAccess, err := s.generateAccessToken(user)
+	newRefreshToken, err := s.generateRefreshToken(tokenRecord.UserId)
 	if err != nil {
-		logrus.Println(err, "generateAccessToken")
 		return "", "", err
 	}
-	return newAccess, newRefresh, nil
+
+	newAccessToken, err := s.generateAccessToken(user)
+	if err != nil {
+		return "", "", err
+	}
+
+	return newRefreshToken, newAccessToken, nil
+
 }
 
 func (s *AuthService) generateAccessToken(user models.User) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, tokenClaims{
 		userId:   user.Id,
 		username: user.Username,
 		role:     user.Role,
@@ -146,21 +139,15 @@ func (s *AuthService) generateAccessToken(user models.User) (string, error) {
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	})
+
 	return token.SignedString([]byte(s.signingKey))
 }
 
 func (s *AuthService) generateRefreshToken(userId int) (string, error) {
 	token := uuid.New().String()
-	expiresAt := time.Now().Add(time.Hour * 7 * 24)
-
-	err := s.repo.SaveRefreshToken(models.RefreshToken{
+	return token, s.repo.SaveRefreshToken(models.RefreshToken{
 		UserId:    userId,
 		Token:     token,
-		ExpiresAt: expiresAt,
+		ExpiresAt: time.Now().Add(time.Hour * 24 * 7),
 	})
-	if err != nil {
-		return "", err
-	}
-
-	return token, nil
 }

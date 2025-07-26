@@ -43,9 +43,3 @@ type Media struct {
 	ContentType string    `json:"content_type"`
 	CreatedAt   time.Time `json:"created_at"`
 }
-
-type ProductMedia struct {
-	Id        int
-	ProductId int
-	MediaId   int
-}
