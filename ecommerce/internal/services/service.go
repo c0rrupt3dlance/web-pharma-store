@@ -28,6 +28,7 @@ type Cart interface {
 
 type FileStorage interface {
 	AddMedia(ctx context.Context, productId int, mediaFiles []models.FileDataType) ([]models.MediaUrl, error)
+	GetMedia(ctx context.Context, productId int) ([]models.MediaUrl, error)
 }
 
 type Service struct {

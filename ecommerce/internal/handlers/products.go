@@ -25,8 +25,15 @@ func (h *Handler) GetById(c *gin.Context) {
 		return
 	}
 
+	media, err := h.services.FileStorage.GetMedia(h.ctx, productId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "couldn't get media files"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"data": productResponse,
+		"product": productResponse,
+		"media":   media,
 	})
 }
 func (h *Handler) Create(c *gin.Context) {
