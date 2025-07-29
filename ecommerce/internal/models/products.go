@@ -3,10 +3,11 @@ package models
 import "time"
 
 type Product struct {
-	Id          int     `json:"id"`
-	Name        string  `json:"name,omitempty" binding:"required"`
-	Description string  `json:"description,omitempty" binding:"required"`
-	Price       float32 `json:"price,omitempty" binding:"required"`
+	Id          int        `json:"id"`
+	Name        string     `json:"name,omitempty" binding:"required"`
+	Description string     `json:"description,omitempty" binding:"required"`
+	Price       float32    `json:"price,omitempty" binding:"required"`
+	Media       []MediaUrl `json:"media,omitempty"`
 }
 
 type Category struct {

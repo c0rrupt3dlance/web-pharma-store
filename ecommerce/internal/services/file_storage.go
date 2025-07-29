@@ -46,3 +46,28 @@ func (s *FileStorageService) AddMedia(ctx context.Context, productId int, mediaF
 
 	return responseUrls, nil
 }
+
+func (s *FileStorageService) GetMedia(ctx context.Context, productId int) ([]models.MediaUrl, error) {
+	productMedia := make([]models.MediaUrl, 0)
+
+	objectIds, err := s.products.GetProductMedia(ctx, productId)
+	if err != nil {
+		logrus.Println(err)
+		return nil, err
+	}
+
+	urls, err := s.media.Get(ctx, objectIds)
+	if err != nil {
+		logrus.Println(err)
+		return nil, err
+	}
+
+	for _, v := range objectIds {
+		var media = models.MediaUrl{
+			Url: urls[v],
+		}
+		productMedia = append(productMedia, media)
+	}
+
+	return productMedia, nil
+}

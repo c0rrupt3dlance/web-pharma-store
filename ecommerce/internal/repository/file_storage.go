@@ -70,3 +70,44 @@ func (r *MinioFileStorage) Add(data map[string]models.FileDataType) (map[string]
 	_ = len(urls)
 	return urls, nil
 }
+
+func (r *MinioFileStorage) Get(ctx context.Context, objectIds []string) (map[string]string, error) {
+	urls := make(map[string]string)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	urlCh := make(chan models.MediaUrl, len(objectIds))
+	var wg sync.WaitGroup
+
+	for _, v := range objectIds {
+		wg.Add(1)
+
+		go func(objectId string) {
+			defer wg.Done()
+
+			Url, err := r.Client.PresignedGetObject(ctx, r.Bucket, objectId, time.Hour*2, nil)
+			if err != nil {
+				cancel()
+				return
+			}
+			urlCh <- models.MediaUrl{
+				ObjectId: v,
+				Url:      Url.String(),
+			}
+		}(v)
+
+	}
+
+	go func() {
+		wg.Wait()
+		close(urlCh)
+	}()
+
+	for link := range urlCh {
+		urls[link.ObjectId] = link.Url
+	}
+
+	return urls, nil
+
+}

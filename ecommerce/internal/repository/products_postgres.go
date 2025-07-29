@@ -256,7 +256,7 @@ func intSliceToAnySlice(s []int) []any {
 
 func (r *ProductPostgres) AddProductMedia(ctx context.Context, productId int, keys []string) error {
 	tx, err := r.pool.Begin(ctx)
-	defer tx.Commit(ctx)
+
 	if err != nil {
 		return err
 	}
@@ -271,7 +271,38 @@ func (r *ProductPostgres) AddProductMedia(ctx context.Context, productId int, ke
 			return err
 		}
 	}
-
+	tx.Commit(ctx)
 	logrus.Println(productId, "got new media files")
 	return nil
+}
+
+func (r *ProductPostgres) GetProductMedia(ctx context.Context, productId int) ([]string, error) {
+	objectIds := make([]string, 0)
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		logrus.Println(err)
+		return nil, err
+	}
+
+	query := fmt.Sprintf(`
+		SELECT media_id from %s 
+		where product_id=$1
+	`, productsMediaTable)
+
+	rows, err := tx.Query(ctx, query, productId)
+	if err != nil {
+		logrus.Println(err)
+		return nil, err
+	}
+
+	for rows.Next() {
+		var ObjectId string
+		if err = rows.Scan(&ObjectId); err != nil {
+			logrus.Println(err)
+			return nil, err
+		}
+		objectIds = append(objectIds, ObjectId)
+	}
+
+	return objectIds, nil
 }
