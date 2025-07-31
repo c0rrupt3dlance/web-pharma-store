@@ -44,7 +44,7 @@ func (r *MinioFileStorage) Add(data map[string]models.FileDataType) (map[string]
 				return
 			}
 
-			Url, err := r.Client.PresignedGetObject(ctx, r.Bucket, objectId, time.Second*24*60*60, nil)
+			Url, err := r.Client.PresignedGetObject(ctx, r.Bucket, objectId, time.Hour*1, nil)
 			if err != nil {
 				cancel()
 				return
@@ -86,7 +86,7 @@ func (r *MinioFileStorage) Get(ctx context.Context, objectIds []string) (map[str
 		go func(objectId string) {
 			defer wg.Done()
 
-			Url, err := r.Client.PresignedGetObject(ctx, r.Bucket, objectId, time.Hour*2, nil)
+			Url, err := r.Client.PresignedGetObject(ctx, r.Bucket, objectId, time.Hour*1, nil)
 			if err != nil {
 				cancel()
 				return
