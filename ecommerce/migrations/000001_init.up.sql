@@ -39,6 +39,7 @@ CREATE TABLE user_carts(
 
 CREATE TABLE cart_items(
     id SERIAL PRIMARY KEY,
+    cart_id INTEGER REFERENCES user_carts(id) ON DELETE CASCADE,
     product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
     quantity INTEGER NOT NULL,
     price DECIMAL(10,2)
