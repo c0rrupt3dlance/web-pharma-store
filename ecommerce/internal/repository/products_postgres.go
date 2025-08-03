@@ -10,13 +10,6 @@ import (
 	"strings"
 )
 
-const (
-	productsTable         = "products"
-	categoriesTable       = "categories"
-	productsCategoryTable = "products_category"
-	productsMediaTable    = "products_media"
-)
-
 type ProductPostgres struct {
 	pool *pgxpool.Pool
 }
@@ -60,36 +53,42 @@ func (r *ProductPostgres) Create(ctx context.Context, p models.ProductInput) (in
 
 func (r *ProductPostgres) GetById(ctx context.Context, productId int) (models.ProductResponse, error) {
 	var p = models.ProductResponse{
-		Product: models.Product{
-			Id: productId,
-		},
+		Product:    models.Product{Id: productId},
+		Categories: make([]*models.Category, 0),
 	}
-	query := fmt.Sprintf(`select name, description, price from %s where id=$1`, productsTable)
-	categoryQuery := fmt.Sprintf(`SELECT ct.id, ct.name from %s ct inner join
-                      %s pc on ct.id = pc.category_id where pc.product_id = $1`, categoriesTable, productsCategoryTable)
-	row := r.pool.QueryRow(ctx, query, productId)
+
+	getProductQuery := fmt.Sprintf(`
+	SELECT name, description, price 
+	FROM %s WHERE id=$1
+	`, productsTable)
+	getCategoriesQuery := fmt.Sprintf(`
+	SELECT ct.id, ct.name FROM %s ct
+	INNER JOIN %s pc
+	ON ct.id=pc.category_id
+	WHERE pc.product_id=$1
+	`, categoriesTable, productsCategoryTable)
+
+	row := r.pool.QueryRow(ctx, getProductQuery, productId)
 	if err := row.Scan(&p.Product.Name, &p.Product.Description, &p.Product.Price); err != nil {
-		logrus.Println(err, productId)
+		logrus.Println("Product - GetById: couldn't get product;", err)
 		return models.ProductResponse{}, err
 	}
 
-	rows, err := r.pool.Query(ctx, categoryQuery, productId)
-
+	rows, err := r.pool.Query(ctx, getCategoriesQuery, productId)
 	if err != nil {
-		logrus.Println(err)
+		logrus.Println("Product - GetById;", err)
 		return models.ProductResponse{}, err
 	}
 	defer rows.Close()
-	logrus.Println(rows)
 	for rows.Next() {
-		category := models.Category{}
-		if err = rows.Scan(&category.Id, &category.Name); err != nil {
-			logrus.Println(err)
+		var c = models.Category{}
+		if err := rows.Scan(&c.Id, &c.Name); err != nil {
+			logrus.Println("Product - GetById: couldn't get product;", err)
 			return models.ProductResponse{}, err
 		}
-		logrus.Println(p.Categories, category, "categories are")
-		p.Categories = append(p.Categories, &category)
+		p.Categories = append(p.Categories, &c)
 	}
+
 	return p, nil
 }
 

@@ -9,8 +9,12 @@ import (
 )
 
 const (
-	usersTable         = "users"
-	refreshTokensTable = "refresh_tokens"
+	productsTable         = "products"
+	categoriesTable       = "categories"
+	productsCategoryTable = "products_category"
+	productsMediaTable    = "products_media"
+	userCartsTable        = "user_carts"
+	cartItemsTable        = "cart_items"
 )
 
 type PgPool struct {

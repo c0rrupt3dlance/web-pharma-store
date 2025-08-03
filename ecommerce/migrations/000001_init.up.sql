@@ -16,15 +16,6 @@ CREATE TABLE products_category(
     PRIMARY KEY (product_id, category_id)
 );
 
-CREATE TABLE product_images (
-    id SERIAL PRIMARY KEY,
-    product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL,
-    alt_text TEXT,
-    is_main BOOLEAN DEFAULT false
-);
-
-
 CREATE TABLE products_media(
     id SERIAL PRIMARY KEY,
     product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
