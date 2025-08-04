@@ -13,7 +13,6 @@ const (
 	categoriesTable       = "categories"
 	productsCategoryTable = "products_category"
 	productsMediaTable    = "products_media"
-	userCartsTable        = "user_carts"
 	cartItemsTable        = "cart_items"
 )
 

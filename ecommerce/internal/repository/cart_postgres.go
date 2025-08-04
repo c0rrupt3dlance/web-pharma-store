@@ -18,19 +18,32 @@ func NewCartPostgres(pool *pgxpool.Pool) *CartPostgres {
 	}
 }
 
-func (r *CartPostgres) GetUserCart(ctx context.Context, userId int) (int, error) {
-	var cartId int
-	query := fmt.Sprintf(`
-	SELECT id from %s where user_id
-	`, userCartsTable)
-	row := r.pool.QueryRow(ctx, query, userId)
-	if err := row.Scan(&cartId); err != nil {
-		logrus.Println("GetUserCart:", err)
-		return 0, err
+func (r *CartPostgres) GetUserCart(ctx context.Context, userId int) (*models.UserCart, error) {
+	var userCart = models.UserCart{
+		UserId:    userId,
+		CartItems: make([]models.CartItem, 0),
 	}
-
-	return 0, nil
-
+	query := fmt.Sprintf(`
+	SELECT ci.id,ci.product_id,ci.quantity,pt.price
+	FROM %s ci 
+	INNER JOIN %s pt
+	ON ci.product_id=pt.id
+	WHERE ci.user_id=$1
+	`, cartItemsTable, productsTable)
+	rows, err := r.pool.Query(ctx, query, userId)
+	if err != nil {
+		logrus.Println("GetUserCart:", err)
+		return nil, err
+	}
+	for rows.Next() {
+		var cartItem = models.CartItem{}
+		if err := rows.Scan(&cartItem.Id, &cartItem.ProductId, &cartItem.Quantity, &cartItem.Price); err != nil {
+			logrus.Println("GetUserCart:", err)
+			return nil, err
+		}
+		userCart.CartItems = append(userCart.CartItems, cartItem)
+	}
+	return nil, nil
 }
 
 func (r *CartPostgres) AddToCart(p int, q int, price float32, userId int) error {

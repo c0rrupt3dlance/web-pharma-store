@@ -23,15 +23,9 @@ CREATE TABLE products_media(
     created_at TIMESTAMP DEFAULT now()
 );
 
-CREATE TABLE user_carts(
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL
-);
-
 CREATE TABLE cart_items(
     id SERIAL PRIMARY KEY,
-    cart_id INTEGER REFERENCES user_carts(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL,
     product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
-    quantity INTEGER NOT NULL,
-    price DECIMAL(10,2)
+    quantity INTEGER NOT NULL
 )
