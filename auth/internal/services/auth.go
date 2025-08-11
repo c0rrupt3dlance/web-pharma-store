@@ -6,6 +6,7 @@ import (
 	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
 	uuid "github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 )
@@ -100,6 +101,11 @@ func (s *AuthService) VerifyAccessToken(tokenString string) (models.User, error)
 }
 
 func (s *AuthService) RefreshTokens(refreshToken string) (string, string, error) {
+	var (
+		newRefreshToken string
+		newAccessToken  string
+	)
+
 	tokenRecord, err := s.repo.GetRefreshToken(refreshToken)
 	if err != nil || tokenRecord.Revoked || tokenRecord.ExpiresAt.Before(time.Now()) {
 		return "", "", err
@@ -115,12 +121,12 @@ func (s *AuthService) RefreshTokens(refreshToken string) (string, string, error)
 		return "", "", err
 	}
 
-	newRefreshToken, err := s.generateRefreshToken(tokenRecord.UserId)
+	newRefreshToken, err = s.generateRefreshToken(tokenRecord.UserId)
 	if err != nil {
 		return "", "", err
 	}
 
-	newAccessToken, err := s.generateAccessToken(user)
+	newAccessToken, err = s.generateAccessToken(user)
 	if err != nil {
 		return "", "", err
 	}
@@ -132,10 +138,11 @@ func (s *AuthService) RefreshTokens(refreshToken string) (string, string, error)
 func (s *AuthService) generateAccessToken(user models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, tokenClaims{
 		userId:   user.Id,
-		username: user.Username,
+		username: user.Name,
 		role:     user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenTTL)),
+			Issuer:    "authService",
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	})
@@ -143,11 +150,20 @@ func (s *AuthService) generateAccessToken(user models.User) (string, error) {
 	return token.SignedString([]byte(s.signingKey))
 }
 
-func (s *AuthService) generateRefreshToken(userId int) (string, error) {
-	token := uuid.New().String()
-	return token, s.repo.SaveRefreshToken(models.RefreshToken{
-		UserId:    userId,
-		Token:     token,
-		ExpiresAt: time.Now().Add(time.Hour * 24 * 7),
-	})
+func (s *AuthService) generateRefreshToken(id int) (string, error) {
+	str := uuid.New().String()
+
+	var token = models.RefreshToken{
+		UserId:    id,
+		Token:     str,
+		ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
+		IssuedAt:  time.Now(),
+	}
+
+	err := s.repo.SaveRefreshToken(token)
+	if err != nil {
+		logrus.Println(err)
+	}
+
+	return token.Token, nil
 }
