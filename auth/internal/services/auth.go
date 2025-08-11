@@ -106,33 +106,45 @@ func (s *AuthService) RefreshTokens(refreshToken string) (string, string, error)
 		newAccessToken  string
 	)
 
-	tokenRecord, err := s.repo.GetRefreshToken(refreshToken)
-	if err != nil || tokenRecord.Revoked || tokenRecord.ExpiresAt.Before(time.Now()) {
-		return "", "", err
+	refreshTokenRecorded, err := s.repo.GetRefreshToken(refreshToken)
+	if err != nil {
+		logrus.Println(err)
+		return newRefreshToken, newAccessToken, errors.New("token not valid or not found")
 	}
 
-	err = s.repo.RevokeRefreshToken(refreshToken)
-	if err != nil {
-		return "", "", err
+	if refreshTokenRecorded.Token == "" || refreshTokenRecorded.ExpiresAt.Before(time.Now()) || refreshTokenRecorded.Revoked {
+		err = s.repo.RevokeRefreshToken(refreshTokenRecorded.Token)
+		if err != nil {
+			logrus.Println(err)
+			return newRefreshToken, newAccessToken, errors.New("expired or revoked token")
+		}
 	}
 
-	user, err := s.repo.GetUserById(tokenRecord.UserId)
+	err = s.repo.RevokeRefreshToken(refreshTokenRecorded.Token)
 	if err != nil {
-		return "", "", err
+		logrus.Println(err)
+		return newRefreshToken, newAccessToken, errors.New("couldn't refresh tokens")
 	}
 
-	newRefreshToken, err = s.generateRefreshToken(tokenRecord.UserId)
+	user, err := s.repo.GetUserById(refreshTokenRecorded.UserId)
 	if err != nil {
-		return "", "", err
+		logrus.Println(err)
+		return newRefreshToken, newAccessToken, errors.New("couldn't refresh tokens")
+	}
+
+	newRefreshToken, err = s.generateRefreshToken(refreshTokenRecorded.UserId)
+	if err != nil {
+		logrus.Println(err)
+		return newRefreshToken, newAccessToken, errors.New("couldn't refresh tokens")
 	}
 
 	newAccessToken, err = s.generateAccessToken(user)
 	if err != nil {
-		return "", "", err
+		logrus.Println(err)
+		return newRefreshToken, newAccessToken, errors.New("couldn't refresh tokens")
 	}
 
 	return newRefreshToken, newAccessToken, nil
-
 }
 
 func (s *AuthService) generateAccessToken(user models.User) (string, error) {
@@ -163,6 +175,7 @@ func (s *AuthService) generateRefreshToken(id int) (string, error) {
 	err := s.repo.SaveRefreshToken(token)
 	if err != nil {
 		logrus.Println(err)
+		return "", err
 	}
 
 	return token.Token, nil
