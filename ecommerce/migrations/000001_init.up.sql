@@ -20,6 +20,7 @@ CREATE TABLE products_media(
     id SERIAL PRIMARY KEY,
     product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
     media_id TEXT NOT NULL,
+    display_position SMALLINT NOT NULL,
     created_at TIMESTAMP DEFAULT now()
 );
 

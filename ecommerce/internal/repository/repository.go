@@ -13,8 +13,8 @@ type Products interface {
 	Update(ctx context.Context, productId int, product models.UpdateProductInput) error
 	Delete(ctx context.Context, ProductId int) error
 	GetByCategories(ctx context.Context, categoriesId []int) ([]models.ProductResponse, error)
-	AddProductMedia(ctx context.Context, productId int, keys []string) error
-	GetProductMedia(ctx context.Context, productId int) ([]string, error)
+	AddProductMedia(ctx context.Context, productId int, objIds map[int]string) error
+	GetProductMedia(ctx context.Context, productId int) (map[int]string, error)
 }
 
 type Cart interface {
@@ -26,8 +26,8 @@ type Cart interface {
 }
 
 type FileStorage interface {
-	Add(data map[string]models.FileDataType) (map[string]string, error)
-	Get(ctx context.Context, objectIds []string) (map[string]string, error)
+	AddMedia(data map[string]models.FileDataType) (map[string]string, error)
+	GetMedia(ctx context.Context, objectIds []string) (map[string]string, error)
 }
 type Repository struct {
 	Products

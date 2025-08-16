@@ -28,22 +28,26 @@ func (h *Handler) InitRoutes() *gin.Engine {
 			"ping": "pong",
 		})
 	})
-	api := router.Group("/api/v1", h.parseAccessToken)
+	api := router.Group("/api/v1", h.verifyUserToken)
 	{
 		products := api.Group("/products")
 		{
 			products.GET("/:id", h.GetById)
 			products.POST("/get_by_category", h.GetByCategories)
-			products.POST("/", h.Create)
-			products.PUT("/:id", h.Update)
-			products.DELETE("/:id", h.Delete)
-			products.POST("/:id/media", h.Upload)
 			products.GET("/cart")
 			products.POST("/:id/add_to_cart")
 			products.DELETE("/cart/:id")
+
+			ctlStore := products.Group("/ctl", h.verifyAdminToken)
+			{
+				products.POST("/", h.Create)
+				ctlStore.PUT("/:id", h.Update)
+				ctlStore.DELETE("/:id", h.Delete)
+				ctlStore.POST("/:id/media", h.Upload)
+			}
+
 		}
 
+		return router
 	}
-
-	return router
 }

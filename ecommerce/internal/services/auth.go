@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
 )
@@ -24,30 +23,27 @@ func NewAuthService(signingKey string) *AuthService {
 	}
 }
 
-func (s *AuthService) VerifyAccessToken(tokenString string) (int, error) {
+func (s *AuthService) VerifyAccessToken(tokenString string) (int, *string, error) {
 	var userId int
+	var userRole string
+
 	token, err := jwt.ParseWithClaims(tokenString, &tokenClaims{}, func(token *jwt.Token) (interface{}, error) {
-		_, ok := token.Method.(*jwt.SigningMethodHMAC)
-		if !ok {
-			logrus.Printf("%s\n", errors.New("unexpected signing method"))
-			return nil, fmt.Errorf("unexpected signing method")
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("invalid signing method")
 		}
 		return []byte(s.signingKey), nil
 	})
 
 	if err != nil {
-		if errors.Is(err, jwt.ErrTokenExpired) {
-			logrus.Printf("%s\n", errors.New("access token expired"))
-			return 0, errors.New("access token expired")
-		}
-		return 0, err
+		logrus.Println(err, "it's in parse with claims")
+		return 0, nil, err
 	}
 
 	if claims, ok := token.Claims.(*tokenClaims); ok && token.Valid {
 		userId = claims.userId
-		logrus.Printf("%s\n", err)
-		return 0, err
+		userRole = claims.role
+		return userId, &userRole, nil
 	}
 
-	return userId, nil
+	return 0, nil, err
 }

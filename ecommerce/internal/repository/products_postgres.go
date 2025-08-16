@@ -253,30 +253,29 @@ func intSliceToAnySlice(s []int) []any {
 	return anySlice
 }
 
-func (r *ProductPostgres) AddProductMedia(ctx context.Context, productId int, keys []string) error {
+func (r *ProductPostgres) AddProductMedia(ctx context.Context, productId int, objId map[int]string) error {
 	tx, err := r.pool.Begin(ctx)
-
 	if err != nil {
 		return err
 	}
 	query := fmt.Sprintf(`
-		INSERT INTO %s(product_id, media_id) VALUES($1, $2)
+	INSERT INTO %s (product_id, media_id, display_position) VALUES($1, $2, $3)
 	`, productsMediaTable)
 
-	for _, v := range keys {
-		_, err = tx.Exec(ctx, query, productId, v)
+	for k, v := range objId {
+		_, err = tx.Exec(ctx, query, productId, k, v)
 		if err != nil {
 			tx.Rollback(ctx)
 			return err
 		}
 	}
+
 	tx.Commit(ctx)
-	logrus.Println(productId, "got new media files")
 	return nil
 }
 
-func (r *ProductPostgres) GetProductMedia(ctx context.Context, productId int) ([]string, error) {
-	objectIds := make([]string, 0)
+func (r *ProductPostgres) GetProductMedia(ctx context.Context, productId int) (map[int]string, error) {
+	objectIds := make(map[int]string)
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		logrus.Println(err)
@@ -284,7 +283,7 @@ func (r *ProductPostgres) GetProductMedia(ctx context.Context, productId int) ([
 	}
 
 	query := fmt.Sprintf(`
-		SELECT media_id from %s 
+		SELECT media_id, position from %s 
 		where product_id=$1
 	`, productsMediaTable)
 
@@ -295,12 +294,13 @@ func (r *ProductPostgres) GetProductMedia(ctx context.Context, productId int) ([
 	}
 
 	for rows.Next() {
-		var ObjectId string
-		if err = rows.Scan(&ObjectId); err != nil {
+		var objectId string
+		var position int
+		if err = rows.Scan(&objectId); err != nil {
 			logrus.Println(err)
 			return nil, err
 		}
-		objectIds = append(objectIds, ObjectId)
+		objectIds[position] = objectId
 	}
 
 	return objectIds, nil

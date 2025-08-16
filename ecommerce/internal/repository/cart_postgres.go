@@ -46,11 +46,49 @@ func (r *CartPostgres) GetUserCart(ctx context.Context, userId int) (*models.Use
 	return nil, nil
 }
 
-func (r *CartPostgres) AddToCart(p int, q int, price float32, userId int) error {
+func (r *CartPostgres) AddToCart(ctx context.Context, userId int, itemInput models.CartItem) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		logrus.Println("AddToCart", err)
+		return err
+	}
 	query := fmt.Sprintf(`
-		INSERT INTO cart_products (cart_id, product_id, quantity, price) 
-		VALUES((SELECT id FROM user_carts where user_id=$1) $2,$3,$4) 
-	`)
+		INSERT INTO %s (user_id, product_id, quantity, price) 
+		VALUES($1,$2,$3,$4)
+	`, cartItemsTable)
 
+	_, err = tx.Exec(ctx, query, userId, itemInput)
+	if err != nil {
+		logrus.Println("AddToCart", err)
+		tx.Rollback(ctx)
+		return err
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		logrus.Println("AddToCart", err)
+		return err
+	}
+	return nil
+}
+
+func (r *CartPostgres) RemoveFromCart(ctx context.Context, userId, cartItemId int) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		logrus.Println("RemoveFromCart: ", err)
+		return err
+	}
+
+	query := fmt.Sprintf(`
+	DELETE FROM %s WHERE id=$1 AND user_id=$2 
+	`, cartItemsTable)
+
+	_, err = tx.Exec(ctx, query, cartItemId, userId)
+	if err != nil {
+		logrus.Println("RemoveFromCart: ", err)
+		return err
+	}
+
+	tx.Commit(ctx)
 	return nil
 }

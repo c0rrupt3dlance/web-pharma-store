@@ -4,7 +4,7 @@ type CartItem struct {
 	Id        int     `json:"id"`
 	ProductId int     `json:"product_id"`
 	Quantity  string  `json:"quantity"`
-	Price     float32 `json:"price"`
+	Price     float32 `json:"price,omitempty"`
 }
 
 type UserCart struct {

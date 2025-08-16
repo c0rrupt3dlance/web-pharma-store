@@ -28,6 +28,10 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		auth.POST("/sign-in", h.SignIn)
 		auth.POST("/refresh", h.RefreshToken)
 	}
+	ctlPanel := router.Group("/ctl-panel")
+	{
+		ctlPanel.POST("/register-admin", h.RegisterAdmin)
+	}
 
 	return router
 }

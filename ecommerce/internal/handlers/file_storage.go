@@ -26,6 +26,7 @@ func (h *Handler) Upload(c *gin.Context) {
 		return
 	}
 	files := form.File["media"]
+	positions := c.PostFormArray("positions")
 	if len(files) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "no file was uploaded",
@@ -34,7 +35,8 @@ func (h *Handler) Upload(c *gin.Context) {
 	}
 	var mediaFiles []models.FileDataType
 
-	for _, fileHeader := range files {
+	for i, fileHeader := range files {
+		pos := i + 1
 		file, err := fileHeader.Open()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -42,12 +44,18 @@ func (h *Handler) Upload(c *gin.Context) {
 			})
 			return
 		}
-		defer file.Close()
+
+		if i < len(positions) {
+			if p, err := strconv.Atoi(positions[i]); err == nil {
+				pos = p
+			}
+		}
 
 		data, err := io.ReadAll(file)
+		file.Close()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": "cannot open uploaded file",
+				"message": "cannot read uploaded file",
 			})
 			return
 		}
@@ -55,6 +63,7 @@ func (h *Handler) Upload(c *gin.Context) {
 			FileName: fileHeader.Filename,
 			Data:     data,
 			DataType: fileHeader.Header.Get("Content-Type"),
+			Position: pos,
 		})
 	}
 
@@ -67,4 +76,4 @@ func (h *Handler) Upload(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusAccepted, gin.H{"data": urls})
-}
+} // service error: repo error duplicate key, invalid arguments

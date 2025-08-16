@@ -15,7 +15,7 @@ type Products interface {
 }
 
 type Authorization interface {
-	VerifyAccessToken(accessToken string) (int, error)
+	VerifyAccessToken(accessToken string) (int, *string, error)
 }
 
 type Cart interface {

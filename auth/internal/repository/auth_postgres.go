@@ -17,7 +17,8 @@ func NewAuthPostgres(pool *pgxpool.Pool) *AuthPostgres {
 
 func (r *AuthPostgres) Create(user models.User) (int, error) {
 	query := fmt.Sprintf("INSERT INTO %s (name, surname, username, email, password) values ($1,$2,$3,$4,$5) returning id", usersTable)
-	err := r.pool.QueryRow(context.Background(), query, user.Name, user.Surname, user.Username, user.Email, user.Password).Scan(&user.Id)
+	err := r.pool.QueryRow(context.Background(),
+		query, user.Name, user.Surname, user.Username, user.Email, user.Password).Scan(&user.Id)
 	if err != nil {
 		return 0, err
 	}
