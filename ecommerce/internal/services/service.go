@@ -15,7 +15,7 @@ type Products interface {
 }
 
 type Authorization interface {
-	VerifyAccessToken(accessToken string) (int, *string, error)
+	VerifyAccessToken(accessToken string) (models.User, error)
 }
 
 type Cart interface {
@@ -31,11 +31,18 @@ type FileStorage interface {
 	GetMedia(ctx context.Context, productId int) ([]models.MediaUrl, error)
 }
 
+type Orders interface {
+	CreateOrder(ctx context.Context, input models.OrderInput) (int, error)
+	GetOrder(ctx context.Context, clientId int) (models.Order, error)
+	GetAllOrders(ctx context.Context, clientId int) ([]models.Order, error)
+}
+
 type Service struct {
 	Products
 	Authorization
 	Cart
 	FileStorage
+	Orders
 }
 
 func NewService(repo *repository.Repository, signingKey string) *Service {
@@ -43,5 +50,6 @@ func NewService(repo *repository.Repository, signingKey string) *Service {
 		Products:      NewProductsService(repo),
 		Authorization: NewAuthService(signingKey),
 		FileStorage:   NewFileStorageService(repo.FileStorage, repo.Products),
+		Orders:        NewOrderService(repo.Orders),
 	}
 }

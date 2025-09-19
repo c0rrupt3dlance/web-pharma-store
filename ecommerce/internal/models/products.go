@@ -4,7 +4,7 @@ type Product struct {
 	Id          int        `json:"id"`
 	Name        string     `json:"name,omitempty" binding:"required"`
 	Description string     `json:"description,omitempty" binding:"required"`
-	Price       float32    `json:"price,omitempty" binding:"required"`
+	Price       int        `json:"price,omitempty" binding:"required"`
 	Media       []MediaUrl `json:"media,omitempty"`
 }
 
@@ -29,8 +29,8 @@ type ProductResponse struct {
 }
 
 type UpdateProductInput struct {
-	Name        *string  `json:"name,omitempty"`
-	Description *string  `json:"description,omitempty"`
-	Price       *float32 `json:"price,omitempty"`
-	Categories  []*int   `json:"categories"`
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Price       *int    `json:"price,omitempty"`
+	Categories  []*int  `json:"categories"`
 }

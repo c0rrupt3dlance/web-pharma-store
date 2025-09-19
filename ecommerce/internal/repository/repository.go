@@ -14,7 +14,7 @@ type Products interface {
 	Delete(ctx context.Context, ProductId int) error
 	GetByCategories(ctx context.Context, categoriesId []int) ([]models.ProductResponse, error)
 	AddProductMedia(ctx context.Context, productId int, objIds map[int]string) error
-	GetProductMedia(ctx context.Context, productId int) (map[int]string, error)
+	GetProductMedia(ctx context.Context, productId int) ([]models.MediaUrl, error)
 }
 
 type Cart interface {
@@ -25,19 +25,28 @@ type Cart interface {
 	ClearCart(userId int) error
 }
 
+type Orders interface {
+	CreateOrder(ctx context.Context, input models.OrderInput) (int, error)
+	GetOrder(ctx context.Context, clientId int) (models.Order, error)
+	GetAllOrders(ctx context.Context, clientId int) ([]models.Order, error)
+	AddToOutbox(ctx context.Context, orderId int) error
+}
+
 type FileStorage interface {
-	AddMedia(data map[string]models.FileDataType) (map[string]string, error)
-	GetMedia(ctx context.Context, objectIds []string) (map[string]string, error)
+	AddMedia(ctx context.Context, data map[string]models.FileDataType) (map[string]string, error)
+	GetMedia(ctx context.Context, objectIds []models.MediaUrl) (map[string]string, error)
 }
 type Repository struct {
 	Products
 	Cart
 	FileStorage
+	Orders
 }
 
-func NewRepository(pool *pgxpool.Pool, client *minio.Client, bucket string) *Repository {
+func NewRepository(pool *pgxpool.Pool, client *minio.Client, bucket string, shards int) *Repository {
 	return &Repository{
 		Products:    NewProductPostgres(pool),
-		FileStorage: NewMinioFileStorage(client, bucket),
+		FileStorage: NewMinioFileStorage(client, bucket, shards),
+		Orders:      NewOrderPostgresRepo(pool),
 	}
 }

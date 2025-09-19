@@ -29,15 +29,16 @@ func (h *Handler) verifyUserToken(c *gin.Context) {
 		})
 		return
 	}
-	userId, userRole, err := h.services.VerifyAccessToken(tokenParts[1])
-	if err != nil || userRole == nil {
+	logrus.Println("token", tokenParts[1])
+	user, err := h.services.VerifyAccessToken(tokenParts[1])
+	if err != nil || user.Role == "" {
 		logrus.Printf("%s is our error on service layer", err)
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"message": "invalid token",
 		})
 		return
 	}
-	c.Set(userCtx, userId)
+	c.Set(userCtx, user.Id)
 	c.Next()
 }
 
@@ -58,7 +59,8 @@ func (h *Handler) verifyAdminToken(c *gin.Context) {
 		})
 		return
 	}
-	userId, userRole, err := h.services.VerifyAccessToken(tokenParts[1])
+	logrus.Println("token", tokenParts[1])
+	user, err := h.services.VerifyAccessToken(tokenParts[1])
 	if err != nil {
 		logrus.Printf("%s is our error on service layer", err)
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -66,14 +68,14 @@ func (h *Handler) verifyAdminToken(c *gin.Context) {
 		})
 		return
 	}
-	if *userRole != "admin" {
-		logrus.Printf("%s have tried to access ctl-panel", userId)
+	if user.Role != "admin" {
+		logrus.Printf("%s %s have tried to access ctl-panel", user.Id, user.Role)
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"message": "invalid token",
 		})
 		return
 	}
 
-	c.Set(userCtx, userId)
+	c.Set(userCtx, user.Id)
 	c.Next()
 }

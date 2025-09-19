@@ -5,4 +5,9 @@ DROP TABLE IF EXISTS cart_items;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS user_carts;
+DROP TABLE IF EXISTS outbox;
+DROP TABLE IF EXISTS order_items;
+DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS receivers;
+DROP TABLE IF EXISTS order_statuses;
 

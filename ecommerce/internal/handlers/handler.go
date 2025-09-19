@@ -34,18 +34,25 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		{
 			products.GET("/:id", h.GetById)
 			products.POST("/get_by_category", h.GetByCategories)
-			products.GET("/cart")
-			products.POST("/:id/add_to_cart")
-			products.DELETE("/cart/:id")
+			products.GET("/cart", h.GetUserCart)
+			products.POST("/:id/add_to_cart", h.AddProductToCart)
+			products.DELETE("/cart/:id", h.DeleteProductFromCart)
 
 			ctlStore := products.Group("/ctl", h.verifyAdminToken)
 			{
-				products.POST("/", h.Create)
+				ctlStore.POST("/", h.Create)
 				ctlStore.PUT("/:id", h.Update)
 				ctlStore.DELETE("/:id", h.Delete)
 				ctlStore.POST("/:id/media", h.Upload)
 			}
 
+		}
+
+		orders := api.Group("/orders")
+		{
+			orders.POST("/", h.CreateOrder)
+			orders.GET("/", h.GetAllOrders)
+			orders.GET("/:id", h.GetOrder)
 		}
 
 		return router

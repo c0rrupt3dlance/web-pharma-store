@@ -17,6 +17,9 @@ func NewHandler(services *services.Service) *Handler {
 
 func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
+	router.Use(
+		gin.Logger(), gin.Recovery(),
+	)
 	router.POST("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"ping": "pong",
@@ -26,10 +29,11 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	{
 		auth.POST("/sign-up", h.SignUp)
 		auth.POST("/sign-in", h.SignIn)
-		auth.POST("/refresh", h.RefreshToken)
+
 	}
-	ctlPanel := router.Group("/ctl-panel")
+	ctlPanel := router.Group("/ctl-panel", h.parseAccessToken)
 	{
+		auth.POST("/refresh", h.RefreshToken)
 		ctlPanel.POST("/register-admin", h.RegisterAdmin)
 	}
 

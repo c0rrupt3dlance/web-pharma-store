@@ -263,7 +263,7 @@ func (r *ProductPostgres) AddProductMedia(ctx context.Context, productId int, ob
 	`, productsMediaTable)
 
 	for k, v := range objId {
-		_, err = tx.Exec(ctx, query, productId, k, v)
+		_, err = tx.Exec(ctx, query, productId, v, k)
 		if err != nil {
 			tx.Rollback(ctx)
 			return err
@@ -274,8 +274,8 @@ func (r *ProductPostgres) AddProductMedia(ctx context.Context, productId int, ob
 	return nil
 }
 
-func (r *ProductPostgres) GetProductMedia(ctx context.Context, productId int) (map[int]string, error) {
-	objectIds := make(map[int]string)
+func (r *ProductPostgres) GetProductMedia(ctx context.Context, productId int) ([]models.MediaUrl, error) {
+	objectIds := make([]models.MediaUrl, 0)
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		logrus.Println(err)
@@ -283,8 +283,8 @@ func (r *ProductPostgres) GetProductMedia(ctx context.Context, productId int) (m
 	}
 
 	query := fmt.Sprintf(`
-		SELECT media_id, position from %s 
-		where product_id=$1
+		SELECT media_id, display_position from %s 
+		where product_id=$1 order by display_position asc
 	`, productsMediaTable)
 
 	rows, err := tx.Query(ctx, query, productId)
@@ -296,11 +296,15 @@ func (r *ProductPostgres) GetProductMedia(ctx context.Context, productId int) (m
 	for rows.Next() {
 		var objectId string
 		var position int
-		if err = rows.Scan(&objectId); err != nil {
+		if err = rows.Scan(&objectId, &position); err != nil {
 			logrus.Println(err)
 			return nil, err
 		}
-		objectIds[position] = objectId
+		objectIds = append(objectIds, models.MediaUrl{
+			ObjectId: objectId,
+			Position: position,
+		})
+
 	}
 
 	return objectIds, nil

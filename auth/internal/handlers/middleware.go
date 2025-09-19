@@ -29,7 +29,7 @@ func (h *Handler) parseAccessToken(c *gin.Context) {
 		})
 		return
 	}
-	userId, err := h.services.VerifyAccessToken(tokenParts[1])
+	user, err := h.services.VerifyAccessToken(tokenParts[1])
 	if err != nil {
 		logrus.Printf("%s is our error on service layer", err)
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -38,6 +38,8 @@ func (h *Handler) parseAccessToken(c *gin.Context) {
 		return
 	}
 
-	c.Set(userCtx, userId)
+	logrus.Println("user is", user.Role)
+
+	c.Set(userCtx, user.Id)
 	c.Next()
 }

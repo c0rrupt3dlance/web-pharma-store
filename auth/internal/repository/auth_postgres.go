@@ -41,11 +41,11 @@ func (r *AuthPostgres) GetUser(username string) (models.User, error) {
 }
 
 func (r *AuthPostgres) SaveRefreshToken(token models.RefreshToken) error {
-	query := fmt.Sprintf(`insert into %s (user_id, token, expires_at, revoked)
-		values ($1, $2, $3, $4)`, refreshTokensTable)
+	query := fmt.Sprintf(`insert into %s (user_id, token, revoked)
+		values ($1, $2, $3)`, refreshTokensTable)
 
 	_, err := r.pool.Exec(context.Background(), query,
-		token.UserId, token.Token, token.ExpiresAt, token.Revoked)
+		token.UserId, token.Token, token.Revoked)
 	if err != nil {
 		return err
 	}
@@ -55,11 +55,10 @@ func (r *AuthPostgres) SaveRefreshToken(token models.RefreshToken) error {
 
 func (r *AuthPostgres) GetRefreshToken(token string) (models.RefreshToken, error) {
 	refreshToken := models.RefreshToken{}
-	query := fmt.Sprintf(`select user_id, expires_at, revoked, issued_at 
+	query := fmt.Sprintf(`select user_id, revoked 
 		from %s where token=$1`, refreshTokensTable)
 
-	err := r.pool.QueryRow(context.Background(), query, token).Scan(&refreshToken.UserId,
-		&refreshToken.ExpiresAt, &refreshToken.Revoked, &refreshToken.IssuedAt)
+	err := r.pool.QueryRow(context.Background(), query, token).Scan(&refreshToken.UserId, &refreshToken.Revoked)
 	if err != nil {
 		return models.RefreshToken{}, err
 	}

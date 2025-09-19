@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"log"
 	"os"
+	"strconv"
 )
 
 func main() {
@@ -43,8 +44,12 @@ func main() {
 			false,
 		},
 	)
-
-	var repo = repository.NewRepository(pool, minioClient, os.Getenv("MINIO_BUCKET"))
+	shards, err := strconv.Atoi(os.Getenv("MINIO_WORKERS_SHARDS"))
+	if err != nil {
+		logrus.Println("failed to start server due to: %s", err)
+		os.Exit(1)
+	}
+	var repo = repository.NewRepository(pool, minioClient, os.Getenv("MINIO_BUCKET"), shards)
 	var service = services.NewService(repo, os.Getenv("SIGNING_KEY"))
 	var handler = handlers.NewHandler(context.Background(), service)
 	server := new(app.Server)
@@ -54,4 +59,5 @@ func main() {
 		logrus.Println("failed to start server due to: %s", err)
 		os.Exit(1)
 	}
+
 }

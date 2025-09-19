@@ -14,6 +14,11 @@ const (
 	productsCategoryTable = "products_category"
 	productsMediaTable    = "products_media"
 	cartItemsTable        = "cart_items"
+	receiversTable        = "receivers"
+	ordersTable           = "orders"
+	orderItemsTable       = "order_items"
+	orderStatusesTable    = "order_statuses"
+	outboxTable           = "outbox"
 )
 
 type PgPool struct {

@@ -83,5 +83,30 @@ func main() {
 		}
 	}
 
+	type status struct {
+		id   int
+		code string
+	}
+
+	statuses := []string{
+		"created",
+		"in delivery",
+		"delivered",
+		"cancelled",
+		"late",
+		"returned",
+	}
+
+	createStatusQuery := fmt.Sprintf(`
+	INSERT INTO order_statuses (code) values ($1)
+	`)
+
+	for _, v := range statuses {
+		_, err = pool.Exec(ctx, createStatusQuery, v)
+		if err != nil {
+			return
+		}
+	}
+
 	fmt.Println("Finished Seeding")
 }

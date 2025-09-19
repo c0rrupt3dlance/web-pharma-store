@@ -5,7 +5,6 @@ import (
 	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/models"
 	"github.com/c0rrupt3dlance/web-pharma-store/auth/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
-	uuid "github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"time"
@@ -15,10 +14,15 @@ const (
 	TokenTTL = time.Minute * 60
 )
 
-type tokenClaims struct {
-	userId   int
-	username string
-	role     string
+type accessTokenClaims struct {
+	UserId   int    `json:"user_id"`
+	Username string `json:"username"`
+	Role     string `json:"role"`
+	jwt.RegisteredClaims
+}
+
+type refreshTokenClaims struct {
+	UserId int `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
@@ -77,9 +81,12 @@ func (s *AuthService) GenerateTokens(username, password string) (string, string,
 
 func (s *AuthService) VerifyAccessToken(tokenString string) (models.User, error) {
 	user := models.User{}
-	token, err := jwt.ParseWithClaims(tokenString, &tokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+	logrus.Println(tokenString)
+	token, err := jwt.ParseWithClaims(tokenString, &accessTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
+
 		if !ok {
+			logrus.Println("invalid sign")
 			return nil, errors.New("invalid signing method")
 		}
 
@@ -90,29 +97,47 @@ func (s *AuthService) VerifyAccessToken(tokenString string) (models.User, error)
 		return models.User{}, err
 	}
 
-	if claims, ok := token.Claims.(*tokenClaims); ok && token.Valid {
-		user.Id = claims.userId
-		user.Username = claims.username
-		user.Role = claims.role
+	if claims, ok := token.Claims.(*accessTokenClaims); ok && token.Valid {
+		user.Id = claims.UserId
+		user.Username = claims.Username
+		user.Role = claims.Role
 		return user, nil
 	}
 
 	return models.User{}, err
 }
 
-func (s *AuthService) RefreshTokens(refreshToken string) (string, string, error) {
+func (s *AuthService) RefreshTokens(refreshTokenString string) (string, string, error) {
 	var (
 		newRefreshToken string
 		newAccessToken  string
 	)
+	token, err := jwt.ParseWithClaims(refreshTokenString, &refreshTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 
-	refreshTokenRecorded, err := s.repo.GetRefreshToken(refreshToken)
+		if !ok {
+			return nil, errors.New("invalid signing method")
+		}
+
+		return []byte(s.signingKey), nil
+	})
+
+	if err != nil {
+		return "", "", err
+	}
+
+	claims, ok := token.Claims.(*refreshTokenClaims)
+	if !ok || !token.Valid {
+		return "", "", err
+	}
+
+	refreshTokenRecorded, err := s.repo.GetRefreshToken(refreshTokenString)
 	if err != nil {
 		logrus.Println(err)
 		return newRefreshToken, newAccessToken, errors.New("token not valid or not found")
 	}
 
-	if refreshTokenRecorded.Token == "" || refreshTokenRecorded.ExpiresAt.Before(time.Now()) || refreshTokenRecorded.Revoked {
+	if refreshTokenRecorded.Revoked || claims.ExpiresAt.Before(time.Now()) {
 		err = s.repo.RevokeRefreshToken(refreshTokenRecorded.Token)
 		if err != nil {
 			logrus.Println(err)
@@ -148,13 +173,13 @@ func (s *AuthService) RefreshTokens(refreshToken string) (string, string, error)
 }
 
 func (s *AuthService) generateAccessToken(user models.User) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, tokenClaims{
-		userId:   user.Id,
-		username: user.Name,
-		role:     user.Role,
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims{
+		UserId:   user.Id,
+		Username: user.Name,
+		Role:     user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "authService",
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	})
@@ -163,18 +188,23 @@ func (s *AuthService) generateAccessToken(user models.User) (string, error) {
 }
 
 func (s *AuthService) generateRefreshToken(id int) (string, error) {
-	str := uuid.New().String()
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		Issuer:    "authService",
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenTTL * 24 * 7)),
+	})
 
-	var token = models.RefreshToken{
-		UserId:    id,
-		Token:     str,
-		ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
-		IssuedAt:  time.Now(),
+	str, err := refreshToken.SignedString([]byte(s.signingKey))
+	if err != nil {
+		return "", errors.New("couldn't get string of a refresh token")
 	}
 
-	err := s.repo.SaveRefreshToken(token)
+	var token = models.RefreshToken{
+		UserId: id,
+		Token:  str,
+	}
+
+	err = s.repo.SaveRefreshToken(token)
 	if err != nil {
-		logrus.Println(err)
 		return "", err
 	}
 
